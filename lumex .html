@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>LUMEX — DMX Performance Controller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  if (typeof tailwind !== 'undefined') tailwind.config = {
+    theme: { extend: {
+      fontFamily: {
+        display: ['"Chakra Petch"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'Menlo', 'Consolas', 'monospace']
+      },
+      colors: {
+        ink: { 950: '#080b12', 900: '#0d1320', 800: '#111a2c', 700: '#22304d' },
+        neon: { cyan: '#22e5ff', blue: '#4d7cff', violet: '#a15cff', pink: '#ff3df0' }
+      }
+    } }
+  };
+</script>
+<style>
+:root{
+  --ink:#080b12; --panel:#111a2c; --line:#22304d; --line2:#2d3f63;
+  --text:#d6e0f3; --muted:#8494b5;
+  --cyan:#22e5ff; --blue:#4d7cff; --violet:#a15cff; --pink:#ff3df0; --lime:#b6ff3d;
+  --red:#ff3355; --amber:#ffb020; --green:#3dffa0;
+  --display:"Chakra Petch",ui-sans-serif,system-ui,sans-serif;
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{background:var(--ink)}
+body{
+  font-family:var(--sans);color:var(--text);min-height:100vh;
+  background:
+    radial-gradient(900px 480px at 8% -12%,rgba(77,124,255,.20),transparent 62%),
+    radial-gradient(800px 460px at 100% -8%,rgba(161,92,255,.17),transparent 60%),
+    var(--ink);
+}
+.wrap{max-width:1500px;margin:0 auto;padding-left:1rem;padding-right:1rem}
+.mono{font-family:var(--mono)}
+.title{font-family:var(--display);font-weight:600;font-size:1.15rem;letter-spacing:.02em;color:#fff}
+.hint{color:var(--muted);font-size:12.5px;line-height:1.45}
+.lbl{display:block;font-size:12px;color:var(--muted);font-weight:500}
+.panel{background:linear-gradient(180deg,rgba(21,31,52,.92),rgba(13,20,34,.95));border:1px solid var(--line);border-radius:14px}
+
+/* ---------- header ---------- */
+.hdr{position:sticky;top:0;z-index:40;background:rgba(8,11,18,.84);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.hdr-in{display:flex;flex-wrap:wrap;align-items:center;gap:.7rem 1.25rem;padding-top:.7rem;padding-bottom:.7rem}
+.brand{display:flex;align-items:center;gap:.7rem}
+.wordmark{font-family:var(--display);font-weight:700;font-size:1.65rem;letter-spacing:.3em;line-height:1;
+  background:linear-gradient(90deg,var(--cyan),var(--blue) 50%,var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+.tagline{font-size:11px;color:var(--muted);margin-top:.3rem;letter-spacing:.03em}
+.stats{display:flex;gap:1rem;font:500 12px var(--mono);color:var(--muted)}
+.stats b{color:var(--cyan);font-weight:700}
+
+/* ---------- buttons, inputs ---------- */
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem .85rem;border-radius:.6rem;font:600 13px var(--sans);color:#cfe0ff;
+  background:linear-gradient(180deg,#1a2743,#121c31);border:1px solid var(--line2);cursor:pointer;
+  transition:border-color .15s,box-shadow .15s;white-space:nowrap}
+.btn:hover{border-color:var(--blue);box-shadow:0 0 16px -5px var(--blue);color:#fff}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.btn-primary{background:linear-gradient(180deg,#2c58ff,#1b38bd);border-color:#6483ff;color:#fff;box-shadow:0 0 24px -8px var(--blue)}
+.btn-danger{border-color:#5a2434;color:#ff9db0}
+.btn-danger:hover{border-color:var(--red);box-shadow:0 0 16px -5px var(--red);color:#fff}
+.btn-sm{padding:.3rem .6rem;font-size:12px}
+.btn-blackout{font:700 13px var(--display);letter-spacing:.14em;padding:.55rem 1.15rem;border-radius:.6rem;cursor:pointer;
+  background:#1a0a10;border:1px solid #6a1c30;color:#ff8fa5;transition:box-shadow .15s,background .15s}
+.btn-blackout:hover{box-shadow:0 0 22px -6px var(--red)}
+.btn-blackout.on{background:var(--red);color:#fff;border-color:#ffa3b3;box-shadow:0 0 34px -2px var(--red)}
+.btn:focus-visible,.inp:focus-visible,.tabbtn:focus-visible,.pad:focus-visible,.fader-track:focus-visible,.btn-blackout:focus-visible,.rng:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.inp{width:100%;background:#0a101d;border:1px solid var(--line2);border-radius:.55rem;padding:.45rem .6rem;color:var(--text);font:500 13px var(--sans);margin-top:.25rem}
+.inp.auto{width:auto}
+.rng{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;margin:.55rem 0 .25rem;outline:none;
+  background:linear-gradient(90deg,#1f3a8a,var(--violet))}
+.rng::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:#0b1020;border:2px solid var(--cyan);box-shadow:0 0 10px var(--cyan);cursor:pointer}
+.rng::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#0b1020;border:2px solid var(--cyan);box-shadow:0 0 10px var(--cyan);cursor:pointer}
+.chk{accent-color:var(--cyan);width:16px;height:16px}
+
+.pill{display:inline-flex;align-items:center;gap:.5rem;padding:.35rem .8rem;border-radius:999px;font:600 12px var(--sans);border:1px solid;transition:color .2s}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
+.pill.sim{color:var(--amber);border-color:#5b4310;background:#1a1406}
+.pill.live{color:var(--green);border-color:#155c3a;background:#06180f}
+.pill.busy{color:var(--cyan);border-color:#14515c;background:#061a1f}
+.pill.warn{color:#ff6b86;border-color:#5f1f2f;background:#1c0810}
+.pill.mini{padding:.2rem .65rem;color:var(--muted);border-color:var(--line2);background:#0a101d}
+.pill.mini.on{color:var(--green);border-color:#155c3a}
+.pill.mini.hold{color:var(--amber);border-color:#5b4310}
+
+/* ---------- tabs and stage ---------- */
+.tabs{display:flex;gap:.25rem;overflow-x:auto;border-bottom:1px solid var(--line);margin-top:.9rem}
+.tabbtn{padding:.65rem 1.05rem;font:600 14px var(--display);letter-spacing:.06em;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;cursor:pointer;background:none}
+.tabbtn:hover{color:#fff}
+.tabbtn.active{color:#fff;border-bottom-color:var(--cyan);text-shadow:0 0 14px rgba(34,229,255,.7)}
+.stage{display:flex;align-items:center;gap:1rem;min-height:46px;padding:.55rem .9rem;background:#080d18;border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+.stage-fx{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:#000;box-shadow:0 0 0 1px #26375b}
+.banner{background:#241a06;border:1px solid #6b4d10;color:#ffd58a;border-radius:12px;padding:.7rem .9rem;font-size:13px;line-height:1.5}
+
+/* ---------- simple desk ---------- */
+.console{background:linear-gradient(180deg,#090e19,#0d1524);border:1px solid #1b2843;border-radius:12px;box-shadow:inset 0 2px 20px rgba(0,0,0,.65)}
+.faders-scroll{display:flex;gap:4px;overflow-x:auto;padding:14px 10px 12px;scrollbar-color:#2d3f63 transparent}
+.fader{flex:0 0 auto;width:60px;display:flex;flex-direction:column;align-items:center;gap:6px;user-select:none;--acc:#4a5a7d}
+.fader.held{--acc:var(--cyan)}
+.fader.auto{--acc:var(--violet)}
+.fader-val{font:700 16px var(--mono);height:22px;color:var(--acc)}
+.fader-track{position:relative;width:46px;height:252px;padding:17px 0;touch-action:none;cursor:ns-resize;outline:none;border-radius:8px}
+.fader-track::before,.fader-track::after{content:"";position:absolute;top:17px;bottom:17px;width:7px;
+  background:repeating-linear-gradient(180deg,#3a5182 0 1px,transparent 1px 10%)}
+.fader-track::before{left:2px}
+.fader-track::after{right:2px}
+.fader-groove{position:absolute;left:50%;top:17px;bottom:17px;width:8px;transform:translateX(-50%);border-radius:6px;background:#04070d;
+  box-shadow:inset 0 0 0 1px #1b2740,inset 0 2px 6px #000;overflow:hidden}
+.fader-live{position:absolute;left:0;right:0;bottom:0;height:calc(var(--live,0)*100%);background:linear-gradient(0deg,var(--acc),transparent 140%);opacity:.9}
+.fader-cap{position:absolute;left:50%;width:42px;height:34px;transform:translateX(-50%);top:calc((1 - var(--v,0)) * (100% - 34px));border-radius:6px;
+  background:linear-gradient(180deg,#42537a,#1d2842 48%,#121a2e 52%,#28365a);box-shadow:0 5px 12px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.2)}
+.fader-cap::after{content:"";position:absolute;left:7px;right:7px;top:50%;height:2px;transform:translateY(-50%);background:var(--acc);box-shadow:0 0 9px var(--acc)}
+.fader-ch{font:600 12px var(--mono);color:#dbe6ff;cursor:default}
+.fader-sub{font-size:10px;color:var(--muted);width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:13px}
+.ldot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+
+/* ---------- patch ---------- */
+.fxcard{display:grid;grid-template-columns:12px minmax(0,1fr) 68px auto auto;align-items:center;gap:.55rem;padding:.55rem .65rem;border:1px solid var(--line);border-radius:10px;background:#0b1220}
+.fxcard .sw{width:12px;height:12px;border-radius:4px;background:var(--c);box-shadow:0 0 10px var(--c)}
+.fxcard .nm{font-weight:600;font-size:13.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fxcard .inp{margin-top:0;padding:.3rem .4rem;text-align:center;font-family:var(--mono)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:4px}
+.pcell{position:relative;height:44px;border-radius:6px;background:#0a0f1b;border:1px solid #17223a;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--mono)}
+.pcell::before{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--lvl,0)*100%);background:var(--c,#4d7cff);opacity:.55}
+.pcell i{font-style:normal;font-size:9px;color:#6d7fa6;position:relative}
+.pcell b{font-size:13px;font-weight:600;position:relative;color:#eaf1ff}
+.pcell.patched{border-color:var(--c)}
+
+/* ---------- audio ---------- */
+.aud-canvas{display:block;width:100%;height:170px;background:#070c17;border:1px solid var(--line);border-radius:10px}
+.meter{position:relative;height:16px;background:#060a14;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.meter-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,transparent,var(--bc))}
+.meter-thr{position:absolute;top:-2px;bottom:-2px;width:2px;background:#fff;box-shadow:0 0 8px #fff}
+.band{transition:box-shadow .08s,border-color .08s}
+.band.hit{border-color:var(--bc);box-shadow:0 0 26px -6px var(--bc)}
+
+/* ---------- ai / steps ---------- */
+.chipbtn{padding:.3rem .7rem;border-radius:999px;border:1px solid var(--line2);background:#0a101d;color:#b9c8e6;font-size:12px;cursor:pointer}
+.chipbtn:hover{border-color:var(--violet);color:#fff}
+.chip{display:inline-block;padding:.22rem .6rem;border-radius:8px;background:#0c1730;border:1px solid #21386b;color:#9fc0ff;font-size:12px;margin:0 .35rem .35rem 0}
+.step-row{display:grid;grid-template-columns:34px 44px minmax(150px,1fr) 100px auto;align-items:center;gap:.7rem;padding:.5rem .6rem;border:1px solid var(--line);border-radius:10px;background:#0b1220}
+.step-row.current{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset,0 0 20px -8px var(--cyan)}
+.step-idx{width:32px;height:32px;border-radius:8px;border:1px solid var(--line2);background:#0a101d;color:#cfe0ff;font:600 13px var(--mono);cursor:pointer}
+.step-idx:hover{border-color:var(--cyan)}
+.step-color{width:44px;height:34px;padding:0;border:1px solid var(--line2);border-radius:8px;background:none;cursor:pointer}
+.ico{width:28px;height:28px;border-radius:7px;border:1px solid var(--line2);background:#0a101d;color:#9db0d6;cursor:pointer;font-size:13px}
+.ico:hover{color:#fff;border-color:var(--blue)}
+
+/* ---------- pads ---------- */
+.pad-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.pad{position:relative;aspect-ratio:1.3/1;border-radius:16px;cursor:pointer;user-select:none;touch-action:none;color:#dbe6ff;
+  border:1px solid color-mix(in srgb,var(--pc) 45%,#1b2540);
+  background:radial-gradient(120% 120% at 50% 0%,color-mix(in srgb,var(--pc) 16%,#0c1324),#080d19);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;transition:box-shadow .08s,background .08s}
+.pad .pl{font:700 clamp(13px,1.6vw,19px) var(--display);letter-spacing:.1em;text-align:center}
+.pad .ps{font-size:11.5px;color:color-mix(in srgb,var(--pc) 60%,#9fb0d2)}
+.pad .pk{position:absolute;left:10px;top:8px;font:600 11px var(--mono);color:#7386ad}
+.pad .pm{position:absolute;right:8px;top:6px;font:600 10.5px var(--mono);padding:2px 6px;border-radius:6px;border:1px solid #2b3c62;background:#0a101d;color:#9db0d6}
+.pad .pm:hover{border-color:var(--cyan);color:#fff}
+.pad.on{color:#fff;box-shadow:0 0 44px -4px var(--pc),inset 0 0 34px rgba(255,255,255,.16);
+  background:radial-gradient(120% 120% at 50% 0%,color-mix(in srgb,var(--pc) 78%,#fff 8%),color-mix(in srgb,var(--pc) 42%,#0a0f1c))}
+.pad.on .ps,.pad.on .pk{color:#fff}
+
+/* ---------- toasts ---------- */
+.toasts{position:fixed;right:14px;bottom:14px;z-index:90;display:flex;flex-direction:column;gap:8px;max-width:min(420px,92vw)}
+.toast{padding:.65rem .9rem;border-radius:10px;font-size:13px;line-height:1.4;background:#0e1730;border:1px solid #2a4a9a;color:#dbe6ff;
+  opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s;box-shadow:0 12px 30px -10px #000}
+.toast.in{opacity:1;transform:none}
+.toast.warn{background:#241a06;border-color:#6b4d10;color:#ffd58a}
+.toast.error{background:#22090f;border-color:#7a2337;color:#ffb3c1}
+
+@media (max-width:760px){
+  .pad-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .step-row{grid-template-columns:34px 44px 1fr;}
+  .fxcard{grid-template-columns:12px minmax(0,1fr) 62px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- Tailwind fallback ----------
+   The layout uses a handful of Tailwind utilities. If the CDN is unreachable (offline venue, locked-down network)
+   these identical definitions keep the layout intact. When Tailwind loads, the values are the same, so nothing changes. */
+.flex{display:flex}.grid{display:grid}.flex-wrap{flex-wrap:wrap}
+.items-center{align-items:center}.items-end{align-items:flex-end}.items-baseline{align-items:baseline}
+.justify-between{justify-content:space-between}.justify-center{justify-content:center}
+.self-end{align-self:flex-end}.shrink-0{flex-shrink:0}.min-w-0{min-width:0}.ml-auto{margin-left:auto}
+.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}
+.gap-x-3{column-gap:.75rem}.gap-x-4{column-gap:1rem}.gap-x-5{column-gap:1.25rem}.gap-x-6{column-gap:1.5rem}.gap-x-8{column-gap:2rem}
+.gap-y-1{row-gap:.25rem}.gap-y-2{row-gap:.5rem}.gap-y-3{row-gap:.75rem}
+.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}
+.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}
+.p-4{padding:1rem}.p-5{padding:1.25rem}.px-1{padding-left:.25rem;padding-right:.25rem}
+.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-1{padding-bottom:.25rem}.pt-3{padding-top:.75rem}
+.text-center{text-align:center}.leading-tight{line-height:1.25}.font-semibold{font-weight:600}.font-display{font-family:var(--display)}
+.text-sm{font-size:.875rem;line-height:1.25rem}.text-lg{font-size:1.125rem;line-height:1.75rem}
+.text-\[11px\]{font-size:11px}.text-\[13px\]{font-size:13px}
+.text-white{color:#fff}.text-slate-300{color:#cbd5e1}.text-slate-400{color:#94a3b8}.text-slate-500{color:#64748b}
+@media (min-width:640px){.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:p-5{padding:1.25rem}}
+@media (min-width:768px){.md\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1024px){.lg\:grid-cols-\[370px_minmax\(0\,1fr\)\]{grid-template-columns:370px minmax(0,1fr)}}
+@media (min-width:1280px){.xl\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<header class="hdr">
+  <div class="wrap hdr-in">
+    <div class="brand">
+      <svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22e5ff"/><stop offset=".55" stop-color="#4d7cff"/><stop offset="1" stop-color="#a15cff"/></linearGradient></defs>
+        <rect x="1.5" y="1.5" width="37" height="37" rx="9" fill="#0b1220" stroke="#26375b"/>
+        <path d="M12 8 L12 27 L28 27" fill="none" stroke="url(#lg)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M20 8 L20 20 M28 8 L28 14" stroke="url(#lg)" stroke-width="3.2" stroke-linecap="round" opacity=".55"/>
+      </svg>
+      <div>
+        <div class="wordmark">LUMEX : DJDP</div>
+        <div class="tagline">DMX performance controller for enntec open dmx</div>
+      </div>
+    </div>
+
+    <div id="conn-pill" class="pill sim"><span class="dot"></span><span id="conn-text">Simulation, no interface</span></div>
+
+    <div class="flex items-center gap-2">
+      <button id="btn-connect" class="btn btn-primary">Connect ENTTEC</button>
+      <button id="btn-connect-any" class="btn" title="Pick any serial port from the browser chooser">Choose port</button>
+      <button id="btn-disconnect" class="btn" hidden>Disconnect</button>
+    </div>
+
+    <div class="stats" title="Transmit rate and time taken by one full loop iteration">
+      <span>FPS <b id="st-fps">–</b></span>
+      <span>Loop <b id="st-loop">–</b></span>
+    </div>
+
+    <button id="btn-blackout" class="btn-blackout ml-auto" title="Kills every channel. Also the first pad on the Pads tab (key 1).">Blackout</button>
+  </div>
+</header>
+
+<div class="wrap pt-3">
+  <div id="support-banner" class="banner mb-3" hidden></div>
+  <div class="stage" aria-label="Live fixture preview">
+    <span class="hint shrink-0">Stage</span>
+    <div id="stage-fx" class="flex items-center gap-3"></div>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tabbtn active" data-tab="desk" role="tab">Simple Desk</button>
+    <button class="tabbtn" data-tab="patch" role="tab">Fixtures &amp; Patch</button>
+    <button class="tabbtn" data-tab="audio" role="tab">Audio</button>
+    <button class="tabbtn" data-tab="ai" role="tab">AI Jockey</button>
+    <button class="tabbtn" data-tab="pads" role="tab">DJ Pads</button>
+  </nav>
+</div>
+
+<main class="wrap py-4">
+
+  <!-- ============ SIMPLE DESK ============ -->
+  <section id="tab-desk" class="tab">
+    <div class="panel p-4 sm:p-5">
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <div>
+          <h2 class="title">Simple Desk</h2>
+          <p class="hint">Faders write straight into the output and hold their channel over any program. Blackout still wins.</p>
+        </div>
+        <div class="ml-auto flex flex-wrap items-center gap-2">
+          <button id="desk-prev" class="btn">Prev</button>
+          <div class="text-center leading-tight px-1">
+            <div id="desk-pagelabel" class="mono text-sm text-white">Ch 1–32</div>
+            <div id="desk-pageno" class="hint">Page 1 / 16</div>
+          </div>
+          <button id="desk-next" class="btn">Next</button>
+          <select id="desk-page" class="inp auto" style="margin-top:0" aria-label="Jump to page"></select>
+          <button id="desk-reset" class="btn btn-danger" title="Zero every fader and hand channels back to running programs">Reset all faders</button>
+        </div>
+      </div>
+      <div class="console"><div id="desk-faders" class="faders-scroll"></div></div>
+      <div class="flex flex-wrap gap-x-5 gap-y-1 mt-3 hint">
+        <span><i class="ldot" style="background:var(--cyan)"></i>Held by a fader</span>
+        <span><i class="ldot" style="background:var(--violet)"></i>Driven by a program</span>
+        <span><i class="ldot" style="background:#4a5a7d"></i>Idle</span>
+        <span>Double-click a channel label to release that channel.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FIXTURES & PATCH ============ -->
+  <section id="tab-patch" class="tab" hidden>
+    <div class="grid gap-4 lg:grid-cols-[370px_minmax(0,1fr)]">
+      <div class="panel p-5">
+        <h2 class="title">Add fixtures</h2>
+        <div class="mt-4 grid gap-3">
+          <label class="lbl">Profile<select id="fx-type" class="inp"></select></label>
+          <div id="fx-chlist" class="hint"></div>
+          <label class="lbl">Name<input id="fx-name" class="inp" maxlength="24" autocomplete="off"></label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="lbl">Start address<input id="fx-addr" type="number" min="1" max="512" class="inp"></label>
+            <label class="lbl">Quantity<input id="fx-count" type="number" min="1" max="64" value="1" class="inp"></label>
+          </div>
+          <button id="fx-add" class="btn btn-primary justify-center">Patch fixture</button>
+        </div>
+        <div class="mt-6 flex items-center justify-between">
+          <h3 class="font-display font-semibold text-white">Patched fixtures</h3>
+          <button id="fx-clear" class="btn btn-danger btn-sm">Clear patch</button>
+        </div>
+        <div id="fx-list" class="mt-3 grid gap-2"></div>
+      </div>
+      <div class="panel p-5">
+        <div class="flex flex-wrap items-baseline gap-x-3 mb-3">
+          <h2 class="title">Universe 1</h2>
+          <p class="hint">Live value of all 512 channels. Bar height is the output level, colour marks the fixture that owns the channel.</p>
+        </div>
+        <div id="patch-grid" class="pgrid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ AUDIO ============ -->
+  <section id="tab-audio" class="tab" hidden>
+    <div class="panel p-5">
+      <div class="flex flex-wrap items-end gap-3">
+        <div>
+          <h2 class="title">Audio input</h2>
+          <p class="hint">Pick a microphone, mixer line-in or loopback device. The signal is analysed only, never played back.</p>
+        </div>
+        <div class="ml-auto flex flex-wrap items-end gap-2">
+          <button id="aud-enable" class="btn">Enable audio inputs</button>
+          <label class="lbl">Device<select id="aud-device" class="inp" style="min-width:250px" disabled><option>Enable inputs first</option></select></label>
+          <button id="aud-start" class="btn btn-primary" disabled>Start listening</button>
+        </div>
+      </div>
+      <div id="aud-status" class="hint mt-2">Audio is off.</div>
+      <canvas id="aud-canvas" class="aud-canvas mt-4"></canvas>
+      <div class="grid sm:grid-cols-2 gap-x-8 gap-y-2 mt-4">
+        <label class="lbl">Input gain <span id="aud-gain-v" class="mono text-white"></span>
+          <input id="aud-gain" class="rng" type="range" min="0.5" max="6" step="0.05"></label>
+        <label class="lbl">Minimum time between triggers <span id="aud-gap-v" class="mono text-white"></span>
+          <input id="aud-gap" class="rng" type="range" min="40" max="600" step="10"></label>
+      </div>
+    </div>
+    <div id="aud-bands" class="grid gap-4 md:grid-cols-3 mt-4"></div>
+  </section>
+
+  <!-- ============ AI JOCKEY ============ -->
+  <section id="tab-ai" class="tab" hidden>
+    <div class="grid gap-4 xl:grid-cols-2">
+      <div class="panel p-5">
+        <h2 class="title">AI light jockey</h2>
+        <p class="hint">Simulated: a local keyword engine turns a description into colours, tempo, waveform and chase pattern across your patched fixtures. Nothing leaves the browser.</p>
+        <div class="flex gap-2 mt-4">
+          <input id="ai-prompt" class="inp" style="margin-top:0" placeholder="Fast high-energy neon strobe" maxlength="140" autocomplete="off">
+          <button id="ai-go" class="btn btn-primary">Generate</button>
+        </div>
+        <div id="ai-suggest" class="flex flex-wrap gap-2 mt-3"></div>
+        <div id="ai-detected" class="mt-4"></div>
+      </div>
+
+      <div class="panel p-5">
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="pb-prev" class="btn">Prev step</button>
+          <button id="pb-play" class="btn btn-primary">Play</button>
+          <button id="pb-next" class="btn">Next step</button>
+          <button id="pb-stop" class="btn">Stop</button>
+          <button id="pb-tap" class="btn" title="Tap in time to set the BPM">Tap tempo</button>
+          <span id="pb-state" class="pill mini ml-auto">Stopped</span>
+        </div>
+        <div id="pb-name" class="hint mt-2"></div>
+        <div class="grid sm:grid-cols-2 gap-x-6 gap-y-3 mt-3">
+          <label class="lbl">Tempo (BPM)
+            <div class="flex items-center gap-3"><input id="p-bpm" class="rng" type="range" min="30" max="240" step="1"><input id="p-bpm-n" class="inp" style="width:74px;margin-top:0" type="number" min="30" max="240"></div>
+          </label>
+          <label class="lbl">Beats per step<select id="p-beats" class="inp">
+            <option value="0.25">1/4 beat</option><option value="0.5">1/2 beat</option><option value="1">1 beat</option><option value="2">2 beats</option><option value="4">4 beats</option></select></label>
+          <label class="lbl">Waveform<select id="p-wave" class="inp">
+            <option value="sine">Sine</option><option value="triangle">Triangle</option><option value="saw">Saw (decay)</option><option value="ramp">Ramp (rise)</option><option value="square">Square</option><option value="flat">Flat (no shaping)</option></select></label>
+          <label class="lbl">Direction<select id="p-dir" class="inp">
+            <option value="forward">Forward</option><option value="reverse">Reverse</option><option value="bounce">Bounce</option><option value="random">Random</option></select></label>
+          <label class="lbl">Pulse depth <span id="p-depth-v" class="mono text-white"></span><input id="p-depth" class="rng" type="range" min="0" max="100"></label>
+          <label class="lbl">Crossfade <span id="p-fade-v" class="mono text-white"></span><input id="p-fade" class="rng" type="range" min="0" max="100"></label>
+          <label class="lbl">Spread across fixtures <span id="p-spread-v" class="mono text-white"></span><input id="p-spread" class="rng" type="range" min="0" max="2" step="0.25"></label>
+          <label class="lbl">Moving head sweep <span id="p-motion-v" class="mono text-white"></span><input id="p-motion" class="rng" type="range" min="0" max="100"></label>
+          <label class="lbl">Program master <span id="p-master-v" class="mono text-white"></span><input id="p-master" class="rng" type="range" min="0" max="100"></label>
+          <label class="flex items-center gap-2 text-[13px] text-slate-300 self-end pb-1"><input id="p-audio" class="chk" type="checkbox">Advance steps only on audio triggers</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel p-5 mt-4">
+      <div class="flex flex-wrap items-center gap-3 mb-3">
+        <h2 class="title">Loop steps</h2>
+        <p class="hint">Click a step number to jump to it and pause there. Edits apply instantly.</p>
+        <button id="step-add" class="btn btn-sm ml-auto">Add step</button>
+      </div>
+      <div id="steps" class="grid gap-2"></div>
+    </div>
+  </section>
+
+  <!-- ============ DJ PADS ============ -->
+  <section id="tab-pads" class="tab" hidden>
+    <div class="panel p-5">
+      <div class="flex flex-wrap items-baseline gap-x-4 mb-4">
+        <h2 class="title">Performance pads</h2>
+        <p class="hint">Momentary pads act while held, latching pads toggle. Click the small badge on a pad to switch its mode. Keys mirror the grid: 1 2 3 4 / Q W E R / A S D F / Z X C V. Pads override the desk and programs on patched fixtures.</p>
+      </div>
+      <div id="pad-grid" class="pad-grid"></div>
+    </div>
+  </section>
+</main>
+
+<footer style="border-top:1px solid var(--line);background:rgba(8,11,18,.7)">
+  <div class="wrap py-2 flex flex-wrap items-center gap-x-6 gap-y-1 mono text-[11px] text-slate-500">
+    <span>Frames <b id="d-frames" class="text-slate-300">0</b></span>
+    <span>Dropped <b id="d-drop" class="text-slate-300">0</b></span>
+    <span>Errors <b id="d-err" class="text-slate-300">0</b></span>
+    <span title="Measured on the host between the two setSignals() calls. USB and browser latency make this longer than the requested 100 µs, which DMX receivers accept.">Break ≈ <b id="d-break" class="text-slate-300">–</b></span>
+    <span title="Measured from break release to write(). Anything from 8 µs up to 1 s is valid DMX.">MAB ≈ <b id="d-mab" class="text-slate-300">–</b></span>
+    <span>Frame <b id="d-size" class="text-slate-300">–</b></span>
+    <span title="The first eight channel values in the last frame handed to the serial port. If these show your values but the fixture stays dark, the problem is the address, DMX mode or wiring, not the app.">On the wire, Ch 1–8 <b id="d-wire" class="text-slate-300">not sending</b></span>
+    <label class="flex items-center gap-1" title="Requested break length. Longer is safe (up to 1 s is valid DMX) and helps picky fixtures.">Break µs <input id="d-break-in" type="number" min="88" max="3000" step="10" class="inp auto" style="margin-top:0;width:68px;padding:.2rem .35rem;font-size:11px"></label>
+    <label class="flex items-center gap-1" title="The Open DMX USB only drives the DMX line while RTS is released. Leave this on Released unless your unit needs the opposite.">RTS <select id="d-rts" class="inp auto" style="margin-top:0;padding:.2rem .35rem;font-size:11px"><option value="off">Released</option><option value="on">Asserted</option></select></label>
+    <label class="flex items-center gap-1" title="Requested mark-after-break. The browser's own latency usually makes the real value longer.">MAB µs <input id="d-mab-in" type="number" min="8" max="3000" step="4" class="inp auto" style="margin-top:0;width:60px;padding:.2rem .35rem;font-size:11px"></label>
+    <span>Clock <b id="d-clock" class="text-slate-300">–</b></span>
+    <label class="ml-auto flex items-center gap-2">Frame size
+      <select id="d-frame" class="inp auto" style="margin-top:0;padding:.2rem .4rem;font-size:11px">
+        <option value="full">Full 512 slots</option>
+        <option value="auto">Trim to used channels (faster)</option>
+      </select>
+    </label>
+  </div>
+</footer>
+
+<script>
+'use strict';
+(() => {
+
+/* ================================================================
+   0. CONSTANTS AND SMALL HELPERS
+   ================================================================ */
+const DMX_SLOTS = 512;
+const BAUD = 250000;              // DMX512 line rate
+const TARGET_FPS = 40;
+const FRAME_MS = 1000 / TARGET_FPS;
+const BREAK_US = 100;             // requested break length
+const MAB_US = 12;                // requested mark-after-break
+const SLOT_US = 44;               // one slot on the wire: 1 start + 8 data + 2 stop bits at 250 kbaud
+const WIRE_MARGIN_MS = 1.2;       // safety margin after a frame has been fully clocked out
+const MAX_CONSEC_ERRORS = 25;     // give up on the port after this many failures in a row
+const STROBE_MAX_HZ = 25;         // rate that maps to 255 on a hardware strobe channel
+const STROBE_STEP_VALUE = 190;    // hardware strobe rate used when a chase step turns a strobe fixture "on"
+const SHUTTER_OPEN = 255;         // moving-head shutter value meaning "open" (varies by fixture, edit to suit)
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+const mod = (n, m) => ((n % m) + m) % m;
+const byte = v => (v <= 0 ? 0 : v >= 255 ? 255 : Math.round(v));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const el = (tag, cls, html) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html != null) e.innerHTML = html;
+  return e;
+};
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('lumex.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('lumex.' + k, JSON.stringify(v)); } catch (e) { /* storage can be unavailable */ } }
+};
+
+/* ---- colour ---- */
+function hexToRgb(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+  const n = m ? parseInt(m[1], 16) : 0;
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+}
+function rgbToHex(r, g, b) { return '#' + [r, g, b].map(v => byte(v * 255).toString(16).padStart(2, '0')).join(''); }
+function hsvToRgb(h, s, v) {
+  h = mod(h, 360) / 60;
+  const i = Math.floor(h), f = h - i, p = v * (1 - s), q = v * (1 - s * f), t = v * (1 - s * (1 - f));
+  switch (i) { case 0: return [v, t, p]; case 1: return [q, v, p]; case 2: return [p, v, t]; case 3: return [p, q, v]; case 4: return [t, p, v]; default: return [v, p, q]; }
+}
+function rgbToHsv(r, g, b) {
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let h = 0;
+  if (d) { if (mx === r) h = 60 * mod((g - b) / d, 6); else if (mx === g) h = 60 * ((b - r) / d + 2); else h = 60 * ((r - g) / d + 4); }
+  return [h, mx ? d / mx : 0, mx];
+}
+
+/* ---- deterministic randomness (so the same prompt always yields the same program) ---- */
+function hashStr(s) { let h = 2166136261 >>> 0; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function mulberry32(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function hash2(a, b) { let h = Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return (h ^ (h >>> 16)) >>> 0; }
+
+function toast(msg, kind = 'info', ms = 3800) {
+  const host = $('#toasts');
+  if (!host) return;
+  const t = el('div', 'toast ' + kind);
+  t.textContent = msg;
+  host.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('in'));
+  setTimeout(() => { t.classList.remove('in'); setTimeout(() => t.remove(), 300); }, ms);
+}
+
+/* ================================================================
+   1. TIMING UTILITIES
+   Page timers are throttled hard in background tabs, so pacing is driven by a tiny
+   Web Worker metronome (falls back to setTimeout if workers are unavailable).
+   ================================================================ */
+const Clock = (() => {
+  let worker = null, waiters = [];
+  try {
+    const src = 'setInterval(function(){postMessage(0)},4)';
+    worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+    worker.onmessage = () => { const w = waiters; waiters = []; for (let i = 0; i < w.length; i++) w[i](); };
+    worker.onerror = () => { worker = null; const w = waiters; waiters = []; w.forEach(f => f()); };
+  } catch (e) { worker = null; }
+  return {
+    tick: () => new Promise(res => { if (worker) waiters.push(res); else setTimeout(res, 2); }),
+    get hasWorker() { return !!worker; }
+  };
+})();
+
+const mc = new MessageChannel();
+let yieldRes = null;
+mc.port1.onmessage = () => { const r = yieldRes; yieldRes = null; if (r) r(); };
+const yieldNow = () => new Promise(res => { yieldRes = res; mc.port2.postMessage(0); });
+
+/** Blocking, synchronous delay: bypasses setTimeout drift by polling performance.now(). */
+function spinUntil(t) { while (performance.now() < t) { /* busy wait */ } }
+function spinMicros(us) { spinUntil(performance.now() + us / 1000); }
+
+/** Coarse waits ride the worker metronome, the last few ms are spun for accuracy. */
+async function waitUntil(t) {
+  for (;;) {
+    const left = t - performance.now();
+    if (left <= 0) break;
+    if (left > 4.5) await Clock.tick(); else { spinUntil(t); break; }
+  }
+  await yieldNow();
+}
+
+/* ================================================================
+   2. FIXTURE PROFILES AND PATCH MODEL
+   ================================================================ */
+const PROFILES = {
+  rgb:    { label: 'RGB',         channels: ['Red', 'Green', 'Blue'] },
+  rgbw:   { label: 'RGBW',        channels: ['Red', 'Green', 'Blue', 'White'] },
+  dimmer: { label: 'Dimmer',      channels: ['Dimmer'] },
+  strobe: { label: 'Strobe',      channels: ['Strobe rate'] },
+  mover:  { label: 'Moving head', channels: ['Pan', 'Tilt', 'Color wheel', 'Gobo', 'Shutter', 'Dimmer', 'P/T speed', 'Control'] }
+};
+const chCount = fx => PROFILES[fx.type].channels.length;
+const fxColor = fx => `hsl(${(fx.id * 67 + 190) % 360} 95% 60%)`;
+
+let fixtures = [];
+let nextFxId = 1;
+const channelMap = new Array(DMX_SLOTS).fill(null);   // channel index -> { fx, i }
+
+function markFixture(fx) { const n = chCount(fx); for (let i = 0; i < n; i++) channelMap[fx.addr - 1 + i] = { fx, i }; }
+function rebuildPatchMap() {
+  channelMap.fill(null);
+  fixtures.forEach(markFixture);
+  store.set('fixtures', fixtures.map(f => ({ id: f.id, name: f.name, type: f.type, addr: f.addr })));
+  onPatchChanged();
+}
+function isFree(addr, n, ignoreId) {
+  if (addr < 1 || addr + n - 1 > DMX_SLOTS) return false;
+  for (let i = 0; i < n; i++) { const c = channelMap[addr - 1 + i]; if (c && c.fx.id !== ignoreId) return false; }
+  return true;
+}
+function nextFreeAddress(n) { for (let a = 1; a + n - 1 <= DMX_SLOTS; a++) if (isFree(a, n)) return a; return null; }
+
+function addFixtures(type, addr, count, baseName) {
+  const p = PROFILES[type];
+  if (!p) return 0;
+  const n = p.channels.length;
+  let added = 0;
+  for (let k = 0; k < count; k++) {
+    const a = addr + k * n;
+    if (a + n - 1 > DMX_SLOTS) { toast(`Universe is full: ${added} of ${count} patched.`, 'warn'); break; }
+    if (!isFree(a, n)) { toast(`Channels ${a}–${a + n - 1} overlap an existing fixture. ${added} of ${count} patched.`, 'warn'); break; }
+    const fx = { id: nextFxId++, name: count > 1 ? `${baseName} ${k + 1}` : baseName, type, addr: a };
+    fixtures.push(fx);
+    markFixture(fx);
+    added++;
+  }
+  if (added) rebuildPatchMap();
+  return added;
+}
+function removeFixture(id) {
+  fixtures = fixtures.filter(f => f.id !== id);
+  rebuildPatchMap();
+}
+function moveFixture(id, addr) {
+  const fx = fixtures.find(f => f.id === id);
+  if (!fx) return false;
+  if (!isFree(addr, chCount(fx), id)) { toast(`Channels ${addr}–${addr + chCount(fx) - 1} are not free.`, 'warn'); return false; }
+  fx.addr = addr;
+  rebuildPatchMap();
+  return true;
+}
+function loadFixtures() {
+  const saved = store.get('fixtures', []);
+  if (!Array.isArray(saved)) return;
+  for (const f of saved) {
+    const p = f && PROFILES[f.type];
+    if (!p) continue;
+    const addr = f.addr | 0, n = p.channels.length;
+    if (!isFree(addr, n)) continue;
+    const fx = { id: f.id | 0 || nextFxId, name: String(f.name || p.label).slice(0, 24), type: f.type, addr };
+    fixtures.push(fx);
+    markFixture(fx);
+    nextFxId = Math.max(nextFxId, fx.id + 1);
+  }
+  rebuildPatchMap();
+}
+
+/* ================================================================
+   3. LOOKS -> DMX CHANNELS
+   A "look" is { r, g, b, w?, level, strobeHz, pan, tilt, ovr? } with values 0..1.
+   Every layer (programs, audio, pads) produces looks; writeFixture() turns one into channel bytes.
+   ================================================================ */
+let frameIdx = 0;
+
+/** Software strobe, quantised to whole DMX frames so the flash cadence is perfectly regular. */
+function strobeOn(hz) {
+  const fps = (dmx.active && dmx.fps > 10) ? dmx.fps : TARGET_FPS;
+  const half = Math.max(1, Math.round(fps / (2 * hz)));
+  return Math.floor(frameIdx / half) % 2 === 0;
+}
+
+/** Moving-head colour wheel: slot 0 = open/white, slots 1..7 = colours. Edit to match your fixture's chart. */
+function wheelValue(r, g, b) {
+  const [h, s, v] = rgbToHsv(r, g, b);
+  if (s < 0.3 || v < 0.05) return 16;
+  return (1 + Math.min(6, Math.floor(h / 360 * 7))) * 32 + 16;
+}
+function wheelRgb(val) {
+  const slot = Math.floor(val / 32);
+  if (slot <= 0) return [255, 255, 255];
+  const c = hsvToRgb(((slot - 1) + 0.5) / 7 * 360, 1, 1);
+  return [c[0] * 255, c[1] * 255, c[2] * 255];
+}
+
+const IDLE_LOOK = { r: 0, g: 0, b: 0, level: 0, strobeHz: 0, pan: 0.5, tilt: 0.5 };
+
+function writeFixture(fx, look, buf) {
+  const a = fx.addr - 1;
+  const sh = look.strobeHz || 0;
+  let lvl = look.level;
+  if (sh > 0 && fx.type !== 'strobe' && !strobeOn(sh)) lvl = 0;
+  const r = look.r * lvl, g = look.g * lvl, b = look.b * lvl;
+  const hasW = look.w !== undefined;
+  switch (fx.type) {
+    case 'rgb':
+      buf[a] = byte(r * 255); buf[a + 1] = byte(g * 255); buf[a + 2] = byte(b * 255);
+      break;
+    case 'rgbw': {
+      const w = hasW ? look.w * lvl : Math.min(r, g, b);
+      const sub = hasW ? 0 : w;               // pull the white component out of RGB unless white is forced
+      buf[a] = byte((r - sub) * 255); buf[a + 1] = byte((g - sub) * 255); buf[a + 2] = byte((b - sub) * 255); buf[a + 3] = byte(w * 255);
+      break;
+    }
+    case 'dimmer':
+      buf[a] = byte(Math.max(r, g, b, hasW ? look.w * lvl : 0) * 255);
+      break;
+    case 'strobe': {
+      let v = 0;
+      if (sh > 0) v = clamp(Math.round(sh / STROBE_MAX_HZ * 255), 1, 255);
+      else if (!look.ovr && Math.max(r, g, b) > 0.6) v = STROBE_STEP_VALUE;
+      buf[a] = v;
+      break;
+    }
+    case 'mover':
+      buf[a] = byte((look.pan === undefined ? 0.5 : look.pan) * 255);
+      buf[a + 1] = byte((look.tilt === undefined ? 0.5 : look.tilt) * 255);
+      buf[a + 2] = wheelValue(look.r, look.g, look.b);
+      buf[a + 3] = 0;                          // gobo: open
+      buf[a + 4] = SHUTTER_OPEN;
+      buf[a + 5] = byte(Math.max(r, g, b, hasW ? look.w * lvl : 0) * 255);   // dimmer carries the software strobe gate
+      buf[a + 6] = 0; buf[a + 7] = 0;          // speed: fast, control: none
+      break;
+  }
+}
+
+/** Colour of a fixture as it is actually being sent (read back from the output buffer). */
+function previewColor(fx) {
+  const a = fx.addr - 1, b = dmxBuffer;
+  switch (fx.type) {
+    case 'rgb': return [b[a], b[a + 1], b[a + 2]];
+    case 'rgbw': { const w = b[a + 3]; return [Math.min(255, b[a] + w), Math.min(255, b[a + 1] + w), Math.min(255, b[a + 2] + w)]; }
+    case 'dimmer': return [b[a], b[a], b[a]];
+    case 'strobe': { const v = b[a] > 0 && strobeOn(Math.max(1, b[a] / 255 * STROBE_MAX_HZ)) ? 255 : 0; return [v, v, v]; }
+    case 'mover': { const d = b[a + 5] / 255, c = wheelRgb(b[a + 2]); return [byte(c[0] * d), byte(c[1] * d), byte(c[2] * d)]; }
+  }
+  return [0, 0, 0];
+}
+
+/* ================================================================
+   4. MASTER BUFFERS
+   ================================================================ */
+const dmxBuffer = new Uint8Array(DMX_SLOTS);     // master 512-byte output, the thing that goes on the wire
+const programOut = new Uint8Array(DMX_SLOTS);    // what programs / audio want, before desk and pads
+const deskValues = new Uint8Array(DMX_SLOTS);    // Simple Desk fader positions
+const deskHeld = new Uint8Array(DMX_SLOTS);      // 1 = fader owns this channel
+const state = { locateId: null };
+
+/* ================================================================
+   5. ENTTEC OPEN DMX SERIAL ENGINE
+   The Open DMX has no microcontroller: the host produces BREAK, MAB and the slot stream.
+   Frame = BREAK, MAB, start code 0x00, then up to 512 channel slots (513 bytes on the wire).
+   ================================================================ */
+const dmx = {
+  port: null, writer: null,
+  active: false, connecting: false, wantClose: false,
+  frames: 0, dropped: 0, errors: 0, reopens: 0, consecutive: 0, lastError: '',
+  breakUs: 0, mabUs: 0, loopMs: 0, fps: 0, lastFrameAt: 0, wireFreeAt: 0, slotsSent: 0,
+  frameMode: 'full', lastErrToast: 0,
+  breakReq: BREAK_US, mabReq: MAB_US,         // requested break / MAB in microseconds (adjustable in the footer)
+  rts: false                                  // RTS must stay RELEASED (false) on an Open DMX USB or its bus driver is disabled
+};
+const txFrame = new Uint8Array(DMX_SLOTS + 1);   // [0] = start code, [1..512] = channels
+
+function frameSlots() {
+  if (dmx.frameMode === 'full') return DMX_SLOTS;
+  let max = 0;
+  for (const fx of fixtures) max = Math.max(max, fx.addr + chCount(fx) - 1);
+  for (let c = DMX_SLOTS - 1; c >= 0; c--) if (deskHeld[c]) { max = Math.max(max, c + 1); break; }
+  return clamp(max + 4, 24, DMX_SLOTS);
+}
+
+function setConn(kind, text) {
+  const p = $('#conn-pill');
+  if (p) p.className = 'pill ' + kind;
+  const t = $('#conn-text');
+  if (t) t.textContent = text;
+  updateConnUI();
+}
+
+async function openPort(port) {
+  await port.open({ baudRate: BAUD, dataBits: 8, stopBits: 2, parity: 'none', flowControl: 'none', bufferSize: 1024 });
+  // Browsers assert RTS when a port opens. On the Open DMX USB that line controls the RS-485 driver, so leaving it
+  // asserted means frames are sent but nothing reaches the bus (D2XX software such as Freestyler never asserts it).
+  try { await port.setSignals({ requestToSend: dmx.rts }); } catch (e) { /* not supported on this platform */ }
+}
+
+async function connectSerial(forcePicker) {
+  if (!('serial' in navigator)) { toast('Web Serial is not available in this browser. Use Chrome or Edge.', 'warn', 6000); return; }
+  if (dmx.active || dmx.connecting) return;
+  dmx.connecting = true;
+  try {
+    let port = null;
+    if (!forcePicker) {                       // reuse a previously granted ENTTEC / FTDI port without asking again
+      const granted = await navigator.serial.getPorts();
+      const ftdi = granted.filter(p => p.getInfo().usbVendorId === 0x0403);
+      if (ftdi.length === 1) port = ftdi[0];
+    }
+    if (!port) port = await navigator.serial.requestPort(forcePicker ? {} : { filters: [{ usbVendorId: 0x0403 }] });
+    setConn('busy', 'Opening port…');
+    await openPort(port);
+    dmx.port = port;
+    dmx.writer = port.writable.getWriter();
+    dmx.wireFreeAt = 0; dmx.consecutive = 0; dmx.lastFrameAt = 0; dmx.fps = 0;
+    dmx.active = true;
+    setConn('live', 'Transmitting DMX');
+    toast('DMX interface connected. Sending 40 fps.', 'info');
+  } catch (err) {
+    if (err && err.name === 'NotFoundError') setConn('sim', 'Simulation, no interface');   // chooser dismissed
+    else {
+      setConn('warn', 'Could not open port');
+      toast('Could not open the serial port: ' + ((err && err.message) || err) + '. Close other apps using the interface and try again.', 'error', 8000);
+    }
+  } finally { dmx.connecting = false; }
+}
+
+async function closePort() {
+  const port = dmx.port;
+  dmx.port = null; dmx.active = false;
+  if (!port) return;
+  try { await port.setSignals({ break: false }); } catch (e) { /* ignore */ }
+  try { if (dmx.writer) dmx.writer.releaseLock(); } catch (e) { /* ignore */ }
+  dmx.writer = null;
+  try { await port.close(); } catch (e) { /* ignore */ }
+}
+
+/** User-initiated disconnect: leave the rig dark with two blackout frames, then close. */
+async function shutdownPort() {
+  dmx.wantClose = false;
+  if (dmx.port && dmx.writer) {
+    const zeros = new Uint8Array(DMX_SLOTS);
+    for (let i = 0; i < 2; i++) await transmitFrame(zeros);
+  }
+  await closePort();
+  setConn('sim', 'Simulation, no interface');
+}
+
+async function connectionLost(reason) {
+  await closePort();
+  setConn('warn', 'Connection lost');
+  toast('DMX connection lost (' + reason + '). Check the USB cable, then press Connect.', 'error', 9000);
+}
+
+/**
+ * Re-acquire a writer after any failure. Never throws.
+ * Non-fatal serial errors replace port.writable with a fresh stream; fatal ones null it, in which case
+ * the port is closed and reopened. After MAX_CONSEC_ERRORS consecutive failures the port is abandoned.
+ */
+async function recoverPort() {
+  const port = dmx.port;
+  if (!port) return false;
+  try { await port.setSignals({ break: false, requestToSend: dmx.rts }); } catch (e) { /* make sure BREAK is never left asserted */ }
+  try { if (dmx.writer) dmx.writer.releaseLock(); } catch (e) { /* pending write, fall through to reopen */ }
+  dmx.writer = null;
+  try {
+    if (port.writable) { dmx.writer = port.writable.getWriter(); return true; }
+  } catch (e) { /* stream still locked or errored */ }
+  try { await port.close(); } catch (e) { /* ignore */ }
+  try {
+    await openPort(port);
+    dmx.writer = port.writable.getWriter();
+    dmx.reopens++;
+    return true;
+  } catch (e) {
+    dmx.writer = null;
+    dmx.consecutive++;
+    dmx.lastError = (e && e.message) || String(e);
+    if (dmx.consecutive >= MAX_CONSEC_ERRORS) await connectionLost(dmx.lastError);
+    else await sleep(120);
+    return false;
+  }
+}
+
+/** One complete DMX frame. Any failure drops this single frame and the loop carries on. */
+async function transmitFrame(src) {
+  const port = dmx.port, writer = dmx.writer;
+  if (!port || !writer) return;
+  try {
+    // The previous frame must have physically left the UART before we raise the next BREAK.
+    await waitUntil(dmx.wireFreeAt);
+
+    const n = frameSlots();
+    txFrame[0] = 0x00;                                  // NULL start code
+    txFrame.set(src.subarray(0, n), 1);
+    const out = txFrame.slice(0, n + 1);                // fresh copy, so nothing is shared with the stream
+
+    await writer.ready;                                 // 1. writer must be ready
+    await port.setSignals({ break: true, requestToSend: dmx.rts });   // 2. BREAK on (RTS kept released)
+    const tBreakOn = performance.now();
+    spinMicros(dmx.breakReq);                           // 3. busy-wait, default 100 us (synchronous, no timer drift)
+    await port.setSignals({ break: false, requestToSend: dmx.rts });  // 4. BREAK off
+    const tBreakOff = performance.now();
+    spinMicros(dmx.mabReq);                             // 5. busy-wait, default 12 us mark-after-break
+    const tWrite = performance.now();
+    await writer.write(out);                            // 6. start code + channel slots
+    const tDone = performance.now();
+
+    dmx.wireFreeAt = Math.max(tWrite + (n + 1) * SLOT_US / 1000 + WIRE_MARGIN_MS, tDone);
+    dmx.breakUs = (tBreakOff - tBreakOn) * 1000;
+    dmx.mabUs = (tWrite - tBreakOff) * 1000;
+    dmx.slotsSent = n + 1;
+    dmx.frames++;
+    dmx.consecutive = 0;
+    if (dmx.lastFrameAt) { const inst = 1000 / Math.max(1, tDone - dmx.lastFrameAt); dmx.fps = dmx.fps ? dmx.fps * 0.85 + inst * 0.15 : inst; }
+    dmx.lastFrameAt = tDone;
+  } catch (err) {
+    dmx.dropped++; dmx.errors++; dmx.consecutive++;
+    dmx.lastError = (err && err.message) ? err.message : String(err);
+    const now = performance.now();
+    if (now - dmx.lastErrToast > 5000) { dmx.lastErrToast = now; toast('DMX write error, frame dropped: ' + dmx.lastError, 'warn', 5000); }
+    dmx.wireFreeAt = 0;
+    await recoverPort();                                // clear the lock, get a fresh writer
+    if (dmx.port && dmx.consecutive >= MAX_CONSEC_ERRORS) await connectionLost(dmx.lastError);
+    else await sleep(4);                                // yield a macrotask so a failing port can never starve the UI
+  }
+}
+
+/* ================================================================
+   6. MAIN LOOP  (~40 fps, independent of requestAnimationFrame so it keeps running when hidden)
+   ================================================================ */
+async function mainLoop() {
+  let last = performance.now();
+  for (;;) {
+    const t0 = performance.now();
+    const dt = clamp(t0 - last, 0, 250);
+    last = t0;
+    try { composeFrame(t0, dt); } catch (e) { console.error('[LUMEX] compose error', e); }
+    try {
+      if (dmx.wantClose) await shutdownPort();
+      else if (dmx.active) {
+        if (!dmx.writer) await recoverPort();
+        else await transmitFrame(dmxBuffer);
+      }
+    } catch (e) { console.error('[LUMEX] loop error', e); }
+    dmx.loopMs = dmx.loopMs ? dmx.loopMs * 0.9 + (performance.now() - t0) * 0.1 : performance.now() - t0;
+    await waitUntil(Math.max(t0 + FRAME_MS, dmx.active ? dmx.wireFreeAt : 0));
+  }
+}
+
+/* ================================================================
+   7. AUDIO REACTIVITY ENGINE (Web Audio API)
+   ================================================================ */
+const audio = {
+  ctx: null, analyser: null, stream: null, src: null, freq: null, running: false,
+  gain: 1.6, gapMs: 120,
+  hue: 0, kick: 0, flash: 0, pulseEnv: 0, hasColor: false, hasPulse: false,
+  bands: {
+    bass:   { name: 'Bass',   lo: 30,   hi: 150,   thr: 0.55, action: 'step',  color: '#22e5ff', level: 0, above: false, last: 0, hitAt: 0 },
+    mid:    { name: 'Mid',    lo: 150,  hi: 2000,  thr: 0.45, action: 'color', color: '#a15cff', level: 0, above: false, last: 0, hitAt: 0 },
+    treble: { name: 'Treble', lo: 2000, hi: 12000, thr: 0.35, action: 'flash', color: '#ff3df0', level: 0, above: false, last: 0, hitAt: 0 }
+  }
+};
+const AUDIO_ACTIONS = [
+  ['none', 'Do nothing'], ['step', 'Advance chase step'], ['color', 'Shift colour'], ['flash', 'Strobe flash'], ['pulse', 'Brightness follows level']
+];
+
+async function audioStartStream(deviceId) {
+  await audioStopStream();
+  
+  // Captures the digital system audio output loopback channel natively
+  const stream = await navigator.mediaDevices.getDisplayMedia({
+    video: { width: 1, height: 1 }, // Required by browser specs, minimized to save CPU
+    audio: {
+      echoCancellation: false,
+      noiseSuppression: false,
+      autoGainControl: false
+    }
+  });
+
+  // Verification step to make sure the user checked the audio share checkbox
+  const audioTracks = stream.getAudioTracks();
+  if (audioTracks.length === 0) {
+    stream.getTracks().forEach(track => track.stop());
+    throw new Error("You must check the 'Share system audio' checkbox at the bottom of the popup window!");
+  }
+
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  const ctx = new Ctx({ latencyHint: 'interactive' });
+  if (ctx.state === 'suspended') await ctx.resume();
+  
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 2048;
+  analyser.smoothingTimeConstant = 0.5;
+  analyser.minDecibels = -90;
+  analyser.maxDecibels = -20;
+  
+  const src = ctx.createMediaStreamSource(stream);
+  src.connect(analyser); // Deliberately not connected to speakers to avoid infinite sound loops
+  
+  audio.ctx = ctx; 
+  audio.analyser = analyser; 
+  audio.stream = stream; 
+  audio.src = src;
+  audio.freq = new Uint8Array(analyser.frequencyBinCount);
+  audio.running = true;
+  
+  stream.getAudioTracks().forEach(t => t.addEventListener('ended', () => { 
+    audioStopStream(); 
+    toast('Audio input ended.', 'warn'); 
+  }));
+  
+  onAudioState();
+}
+
+async function audioStopStream() {
+  audio.running = false;
+  try { if (audio.stream) audio.stream.getTracks().forEach(t => t.stop()); } catch (e) { /* ignore */ }
+  try { if (audio.src) audio.src.disconnect(); } catch (e) { /* ignore */ }
+  try { if (audio.ctx) await audio.ctx.close(); } catch (e) { /* ignore */ }
+  audio.ctx = audio.analyser = audio.stream = audio.src = audio.freq = null;
+  onAudioState();
+}
+
+function audioFire(b, now) {
+  switch (b.action) {
+    case 'step': chaseAdvance(1, now); break;
+    case 'color': audio.hue = (audio.hue + 47) % 360; audio.kick = 1; break;
+    case 'flash': audio.flash = 1; break;
+  }
+}
+
+function audioUpdate(now, dt) {
+  const A = audio, B = A.bands;
+  A.kick = Math.max(0, A.kick - dt / 350);
+  A.flash = Math.max(0, A.flash - dt / 110);
+  A.hasColor = A.hasPulse = false;
+  for (const k in B) { if (B[k].action === 'color') A.hasColor = true; if (B[k].action === 'pulse') A.hasPulse = true; }
+  if (!A.running) {
+    for (const k in B) { B[k].level *= 0.8; B[k].above = false; }
+    A.pulseEnv *= 0.8;
+    return;
+  }
+  A.analyser.getByteFrequencyData(A.freq);
+  const bins = A.freq.length, nyq = A.ctx.sampleRate / 2;
+  let pulse = 0;
+  for (const k in B) {
+    const b = B[k];
+    const i0 = clamp(Math.floor(b.lo / nyq * bins), 0, bins - 1);
+    const i1 = clamp(Math.ceil(b.hi / nyq * bins), i0 + 1, bins);
+    let sum = 0;
+    for (let i = i0; i < i1; i++) sum += A.freq[i];
+    const raw = clamp(sum / (i1 - i0) / 255 * A.gain, 0, 1);
+    b.level = raw > b.level ? raw : b.level * 0.85 + raw * 0.15;          // fast attack, smooth release
+    if (!b.above) {
+      if (b.level >= b.thr && now - b.last >= A.gapMs) { b.above = true; b.last = now; b.hitAt = now; audioFire(b, now); }
+    } else if (b.level < b.thr * 0.8) b.above = false;                    // hysteresis
+    if (b.action === 'pulse') pulse = Math.max(pulse, b.level);
+  }
+  A.pulseEnv = pulse > A.pulseEnv ? pulse : A.pulseEnv * 0.8 + pulse * 0.2;
+}
+
+/* ================================================================
+   8. CHASE / PROGRAM ENGINE
+   A program is a loop of steps. Each fixture reads the loop at its own offset ("spread"),
+   which is what turns one loop into a chase across the rig.
+   ================================================================ */
+const WAVES = {
+  flat: () => 1,
+  sine: f => 0.5 - 0.5 * Math.cos(2 * Math.PI * f),
+  triangle: f => 1 - Math.abs(2 * f - 1),
+  saw: f => 1 - f,
+  ramp: f => f,
+  square: f => (f < 0.5 ? 1 : 0)
+};
+const PROGRAM_DEFAULTS = { name: 'Untitled', bpm: 120, beats: 1, wave: 'sine', depth: 0, fade: 0.3, spread: 0, dir: 'forward', motion: 0, master: 1, audioDriven: false };
+const makeSteps = (colors, strobe) => colors.map(c => ({ color: c, level: 1, strobe: strobe || 0 }));
+
+const chase = Object.assign({
+  state: 'stopped',           // stopped | paused | playing
+  steps: makeSteps(['#ff2bd6', '#00f0ff', '#7a3cff', '#b6ff00']),
+  pos: 0, stepCounter: 0, lastAdvance: 0, curIdx: 0, motionPhase: 0
+}, PROGRAM_DEFAULTS, { name: 'Neon loop', depth: 0.6, fade: 0.35, spread: 0.25 });
+
+const stepMs = () => 60000 / chase.bpm * chase.beats;
+const audioSteps = () => chase.audioDriven && audio.running;
+const stepRgb = s => s._rgb || (s._rgb = hexToRgb(s.color));
+
+function stepIndex(k, i, n) {
+  switch (chase.dir) {
+    case 'reverse': return mod(-k, n);
+    case 'bounce': { if (n < 2) return 0; const p = 2 * (n - 1), m = mod(k, p); return m < n ? m : p - m; }
+    case 'random': return hash2(k, chase.spread ? i : 0) % n;
+    default: return mod(k, n);
+  }
+}
+
+function chaseUpdate(now, dt) {
+  if (chase.state === 'stopped') return;
+  if (chase.state === 'playing') {
+    if (!audioSteps()) chase.pos += dt / stepMs();
+    chase.motionPhase += dt / 1000 * (chase.bpm / 60) * Math.PI / 2;
+  }
+  const n = chase.steps.length;
+  chase.curIdx = n ? stepIndex(Math.floor(audioSteps() ? chase.stepCounter : chase.pos), 0, n) : 0;
+}
+
+function chaseAdvance(n, now) {
+  if (chase.state === 'stopped' || !chase.steps.length) return;
+  chase.stepCounter += n;
+  chase.lastAdvance = now;
+  if (!audioSteps()) chase.pos = Math.round(chase.pos) + n;
+}
+
+function chaseJump(idx, now) {
+  const n = chase.steps.length;
+  if (!n) return;
+  idx = clamp(idx, 0, n - 1);
+  chase.pos = chase.dir === 'reverse' ? -idx : idx;
+  chase.stepCounter = chase.pos;
+  chase.lastAdvance = now;
+  chase.state = 'paused';
+}
+
+function chaseLook(i) {
+  const n = chase.steps.length;
+  if (chase.state === 'stopped' || !n) return null;
+  const now = performance.now();
+  let k, frac, mix = 0;
+  if (audioSteps()) {
+    k = Math.floor(chase.stepCounter + i * chase.spread);
+    frac = clamp((now - chase.lastAdvance) / stepMs(), 0, 1);
+  } else {
+    const pf = chase.pos + i * chase.spread;
+    k = Math.floor(pf);
+    frac = pf - k;
+    if (chase.fade > 0) mix = clamp((frac - (1 - chase.fade)) / chase.fade, 0, 1);
+  }
+  const A = chase.steps[stepIndex(k, i, n)];
+  const B = mix > 0 ? chase.steps[stepIndex(k + 1, i, n)] : A;
+  const ca = stepRgb(A), cb = stepRgb(B);
+  const env = 1 - chase.depth * (1 - (WAVES[chase.wave] || WAVES.flat)(frac));
+  const look = {
+    r: lerp(ca[0], cb[0], mix), g: lerp(ca[1], cb[1], mix), b: lerp(ca[2], cb[2], mix),
+    level: lerp(A.level, B.level, mix) * env * chase.master,
+    strobeHz: mix < 0.5 ? A.strobe : B.strobe,
+    pan: 0.5, tilt: 0.5
+  };
+  if (chase.motion > 0) {
+    const ph = chase.motionPhase + i * 0.9;
+    look.pan = 0.5 + 0.38 * chase.motion * Math.sin(ph);
+    look.tilt = 0.5 + 0.22 * chase.motion * Math.sin(ph * 0.5 + 1);
+  }
+  return look;
+}
+
+function applyProgramSpec(spec, play) {
+  const p = Object.assign({}, PROGRAM_DEFAULTS, spec);
+  Object.assign(chase, {
+    name: p.name, bpm: clamp(p.bpm, 30, 240), beats: p.beats, wave: p.wave, depth: p.depth, fade: p.fade,
+    spread: p.spread, dir: p.dir, motion: p.motion, master: p.master, audioDriven: !!p.audioDriven
+  });
+  chase.steps = spec.steps ? spec.steps.map(s => ({ color: s.color, level: s.level, strobe: s.strobe })) : makeSteps(spec.colors || ['#ffffff'], spec.strobe || 0);
+  chase.pos = 0; chase.stepCounter = 0; chase.lastAdvance = performance.now(); chase.curIdx = 0;
+  if (play) chase.state = 'playing';
+  syncProgramUI(); renderSteps(); syncPlayUI();
+}
+
+const SNAP_KEYS = ['name', 'state', 'bpm', 'beats', 'wave', 'depth', 'fade', 'spread', 'dir', 'motion', 'master', 'audioDriven'];
+function takeSnapshot() {
+  const s = { chase: {}, steps: chase.steps.map(x => ({ color: x.color, level: x.level, strobe: x.strobe })), actions: {} };
+  SNAP_KEYS.forEach(k => { s.chase[k] = chase[k]; });
+  for (const k in audio.bands) s.actions[k] = audio.bands[k].action;
+  return s;
+}
+function restoreSnapshot(s) {
+  Object.assign(chase, s.chase);
+  chase.steps = s.steps;
+  for (const k in s.actions) audio.bands[k].action = s.actions[k];
+  syncProgramUI(); renderSteps(); syncPlayUI(); syncBandUI();
+}
+
+/* ================================================================
+   9. SIMULATED AI LIGHT JOCKEY (local keyword parser, deterministic per prompt)
+   ================================================================ */
+const rainbow6 = [0, 60, 120, 180, 240, 300].map(h => { const c = hsvToRgb(h, 1, 1); return rgbToHex(c[0], c[1], c[2]); });
+const PALETTE_DB = [
+  { name: 'neon',      keys: ['neon', 'glow', 'electric', 'fluorescent', 'laser'], colors: ['#ff2bd6', '#00f0ff', '#b6ff00', '#7a3cff'] },
+  { name: 'cyberpunk', keys: ['cyberpunk', 'cyber', 'dystopian', 'blade-runner', 'bladerunner'], colors: ['#ff2a9d', '#00e5ff', '#8a2bff', '#1f4bff'] },
+  { name: 'synthwave', keys: ['synthwave', 'vaporwave', 'retrowave', 'outrun', 'retro', '80s'], colors: ['#ff71ce', '#01cdfe', '#b967ff', '#fffb96'] },
+  { name: 'fire',      keys: ['fire', 'flame', 'lava', 'inferno', 'hot', 'burning', 'molten'], colors: ['#ff2200', '#ff6a00', '#ffb300', '#ff0033'] },
+  { name: 'sunset',    keys: ['sunset', 'sunrise', 'dusk', 'twilight', 'warm', 'tropical'], colors: ['#ff3d00', '#ff007a', '#ff9e00', '#7a00ff'] },
+  { name: 'ocean',     keys: ['ocean', 'sea', 'water', 'aqua', 'underwater', 'marine', 'lagoon'], colors: ['#0066ff', '#00c8ff', '#00ffd5', '#0033aa'] },
+  { name: 'forest',    keys: ['forest', 'jungle', 'nature', 'emerald', 'woods', 'moss', 'garden'], colors: ['#00ff55', '#00b36b', '#b6ff3d', '#007a4d'] },
+  { name: 'ice',       keys: ['ice', 'icy', 'arctic', 'frost', 'frozen', 'winter', 'snow', 'cold', 'cool'], colors: ['#ffffff', '#a8e6ff', '#3aa0ff', '#7a9bff'] },
+  { name: 'romantic',  keys: ['romantic', 'love', 'valentine', 'passion', 'sexy', 'rose'], colors: ['#ff0066', '#ff5c8a', '#c2185b', '#7a00ff'] },
+  { name: 'techno',    keys: ['techno', 'club', 'rave', 'house', 'trance', 'underground', 'warehouse'], colors: ['#7a00ff', '#2a3cff', '#00e5ff', '#ffffff'] },
+  { name: 'rainbow',   keys: ['rainbow', 'spectrum', 'colorful', 'colourful', 'multicolor', 'multicolour', 'prism', 'pride'], colors: rainbow6 },
+  { name: 'police',    keys: ['police', 'cop', 'cops', 'siren', 'emergency', 'ambulance'], colors: ['#ff0000', '#0022ff'] },
+  { name: 'christmas', keys: ['christmas', 'xmas', 'holiday', 'festive'], colors: ['#ff0000', '#00c800', '#ffffff'] },
+  { name: 'halloween', keys: ['halloween', 'spooky', 'haunted', 'witch'], colors: ['#ff6a00', '#7a00ff', '#22ff33'] },
+  { name: 'gold',      keys: ['gold', 'golden', 'luxury', 'luxurious', 'glam', 'champagne'], colors: ['#ffb300', '#ffdd66', '#ff8c00', '#fff2b0'] },
+  { name: 'cosmic',    keys: ['space', 'galaxy', 'cosmic', 'nebula', 'aurora', 'stellar', 'universe'], colors: ['#2a3cff', '#7a00ff', '#00e5ff', '#ff3df0'] },
+  { name: 'candy',     keys: ['candy', 'pastel', 'cute', 'sweet'], colors: ['#ff8adf', '#8af0ff', '#ffe98a', '#b58aff'] },
+  { name: 'disco',     keys: ['disco', 'funk', 'groovy', 'mirrorball'], colors: ['#ff00aa', '#ffd000', '#00e5ff', '#7a00ff'] },
+  { name: 'toxic',     keys: ['toxic', 'acid', 'radioactive', 'slime', 'matrix'], colors: ['#b6ff00', '#00ff88', '#7a00ff', '#00c8ff'] }
+];
+const COLOR_DB = {
+  red: '#ff0000', orange: '#ff6a00', amber: '#ffb000', yellow: '#ffe600', lime: '#8cff00', green: '#00ff40', teal: '#00e0b0',
+  cyan: '#00e5ff', blue: '#1a3cff', purple: '#8a2bff', violet: '#8a2bff', magenta: '#ff00e6', pink: '#ff3fa4', white: '#ffffff'
+};
+const KW = {
+  fast: ['fast', 'high-energy', 'high energy', 'energetic', 'hype', 'frantic', 'rave', 'party', 'intense', 'aggressive', 'crazy', 'insane', 'banger', 'driving', 'pounding', 'turbo', 'rapid', 'quick', 'wild', 'peak', 'festival', 'edm', 'dance', 'upbeat', 'hectic'],
+  slow: ['slow', 'calm', 'chill', 'moody', 'ambient', 'gentle', 'dreamy', 'relaxed', 'lazy', 'mellow', 'deep', 'sleepy', 'sensual', 'melancholy', 'haunting', 'atmospheric', 'low energy', 'tranquil', 'serene', 'lounge', 'soft', 'slowly'],
+  strobe: ['strobe', 'strobing', 'strobes', 'flash', 'flashing', 'flicker', 'lightning', 'blinder', 'stutter', 'blink', 'blinking'],
+  pulse: ['pulse', 'pulsing', 'pulsate', 'breathe', 'breathing', 'throb', 'heartbeat', 'thump', 'swell'],
+  chase: ['chase', 'chasing', 'run', 'running', 'wipe', 'roll', 'rolling', 'cascade', 'stream', 'sequence', 'ripple', 'wave', 'flow'],
+  bounce: ['bounce', 'bouncing', 'pingpong', 'ping-pong', 'cylon', 'knight-rider', 'back and forth'],
+  reverse: ['reverse', 'backward', 'backwards', 'rewind'],
+  random: ['random', 'chaos', 'chaotic', 'glitch', 'shuffle', 'unpredictable', 'erratic'],
+  alternate: ['alternate', 'alternating', 'alt', 'odd-even', 'swap'],
+  smooth: ['smooth', 'fade', 'fading', 'wash', 'blend', 'morph', 'melt', 'liquid', 'gradient', 'crossfade'],
+  hard: ['snap', 'snappy', 'cut', 'punchy', 'punch', 'hard-cut', 'stab'],
+  motion: ['sweep', 'sweeping', 'move', 'moving', 'motion', 'scan', 'scanning', 'pan', 'tilt', 'orbit', 'swirl'],
+  audio: ['beat', 'music', 'sound', 'audio', 'reactive', 'react', 'bass', 'kick', 'sync', 'rhythm'],
+  dim: ['dim', 'subtle', 'low-key', 'lowkey', 'faint'],
+  sine: ['sine', 'sinewave'], triangle: ['triangle', 'triangular'], saw: ['saw', 'sawtooth'], square: ['square', 'on-off'], ramp: ['ramp', 'build', 'rise', 'rising']
+};
+
+function generateProgram(prompt) {
+  const text = String(prompt).toLowerCase().trim();
+  const words = text.match(/[a-z0-9]+(?:[-'][a-z0-9]+)*/g) || [];
+  const rng = mulberry32(hashStr(text) || 1);
+  const chips = [];
+  const hit = list => list.filter(k => (/[ -]/.test(k) ? text.includes(k) : words.some(w => w === k || (k.length >= 4 && w.startsWith(k)))));
+  const spec = { name: (text.replace(/\b[a-z]/g, c => c.toUpperCase()).slice(0, 34) || 'Generated loop'), master: 1 };
+
+  // tempo and energy
+  const fastH = hit(KW.fast), slowH = hit(KW.slow);
+  const energy = fastH.length - slowH.length;
+  let bpm, beats = 1;
+  if (energy > 0) { bpm = 136 + Math.floor(rng() * 28) + Math.min(energy - 1, 2) * 6; beats = 0.5; chips.push(`"${fastH[0]}" → ${bpm} BPM, half-beat steps`); }
+  else if (energy < 0) { bpm = 48 + Math.floor(rng() * 20); chips.push(`"${slowH[0]}" → ${bpm} BPM`); }
+  else { bpm = 96 + Math.floor(rng() * 30); chips.push(`no tempo keyword → ${bpm} BPM`); }
+  spec.bpm = Math.min(bpm, 240); spec.beats = beats;
+
+  // palette
+  let colors = [];
+  const palNames = [];
+  for (const p of PALETTE_DB) if (hit(p.keys).length) { palNames.push(p.name); colors = colors.concat(p.colors); }
+  const colorWords = [];
+  for (const w of words) if (COLOR_DB[w] && !colorWords.includes(w)) { colorWords.push(w); colors.push(COLOR_DB[w]); }
+  colors = colors.filter((c, i) => colors.indexOf(c) === i).slice(0, 8);
+  if (!colors.length) {
+    const p = PALETTE_DB[Math.floor(rng() * PALETTE_DB.length)];
+    colors = p.colors.slice();
+    chips.push(`no colour keyword → improvised ${p.name} palette`);
+  } else {
+    if (palNames.length) chips.push(palNames.join(' + ') + ' palette');
+    if (colorWords.length) chips.push('colours: ' + colorWords.join(', '));
+  }
+
+  // chase shape
+  let spread = colors.length >= 3 ? 0.25 : 0, dir = 'forward';
+  const alt = hit(KW.alternate).length > 0;
+  const chaseH = hit(KW.chase);
+  if (alt) { if (colors.length < 2) colors.push('#ffffff'); colors = colors.slice(0, 2); spread = 1; chips.push('alternate → 2-step swap between fixtures'); }
+  else {
+    if (chaseH.length) { spread = /wave|ripple|flow/.test(chaseH.join(' ')) ? 0.5 : 1; chips.push(`"${chaseH[0]}" → spread ${spread}`); }
+    if (colors.length < 4) { const base = colors.slice(); while (colors.length < 4) colors.push(base[colors.length % base.length]); }
+  }
+  if (hit(KW.bounce).length) { dir = 'bounce'; if (!spread) spread = 1; chips.push('bounce direction'); }
+  else if (hit(KW.reverse).length) { dir = 'reverse'; chips.push('reverse direction'); }
+  else if (hit(KW.random).length) { dir = 'random'; chips.push('random step order'); }
+
+  // waveform, depth, crossfade
+  const pulseH = hit(KW.pulse);
+  let wave = 'sine', depth = energy < 0 ? 0.3 : 0;
+  if (pulseH.length) { depth = 0.85; chips.push(`"${pulseH[0]}" → sine pulse`); }
+  for (const w of ['sine', 'triangle', 'saw', 'square', 'ramp']) if (hit(KW[w]).length) { wave = w; depth = Math.max(depth, 0.85); chips.push(w + ' waveform'); }
+  let fade = energy > 0 ? 0.15 : energy < 0 ? 0.85 : 0.4;
+  if (hit(KW.smooth).length) { fade = 0.9; chips.push('smooth → long crossfades'); }
+  if (hit(KW.hard).length) { fade = 0; chips.push('hard cuts'); }
+
+  // strobe
+  const strobeH = hit(KW.strobe);
+  let strobeHz = 0;
+  if (strobeH.length) {
+    strobeHz = energy > 0 ? 14 : energy < 0 ? 4 : 9;
+    fade = Math.min(fade, 0.1);
+    chips.push(`"${strobeH[0]}" → ${strobeHz} Hz strobe`);
+  }
+
+  // motion, audio, level
+  let motion = 0;
+  if (hit(KW.motion).length) { motion = 0.6; chips.push('moving heads sweep'); }
+  const audioH = hit(KW.audio);
+  spec.audioDriven = audioH.length > 0;
+  if (spec.audioDriven) chips.push(`"${audioH[0]}" → steps advance on audio triggers`);
+  if (hit(KW.dim).length) { spec.master = 0.5; chips.push('dim → 50% master'); }
+
+  Object.assign(spec, { wave, depth, fade, spread, dir, motion, steps: makeSteps(colors, strobeHz) });
+  return { spec, chips };
+}
+
+/* ================================================================
+   10. PADS: DEFINITIONS, STATE AND MACROS
+   ================================================================ */
+const PAD_DEFS = [
+  { id: 'blackout', label: 'BLACKOUT',   sub: 'kills everything', kind: 'blackout', mode: 'tog', key: '1', color: '#ff3355' },
+  { id: 'white',    label: 'FULL WHITE', sub: 'all fixtures',     kind: 'white',    mode: 'mom', key: '2', color: '#e8f0ff' },
+  { id: 'strobe5',  label: 'STROBE',     sub: '5 Hz white',       kind: 'strobe', hz: 5,  mode: 'mom', key: '3', color: '#c7d6f5' },
+  { id: 'strobe14', label: 'STROBE',     sub: '14 Hz white',      kind: 'strobe', hz: 14, mode: 'mom', key: '4', color: '#f2f6ff' },
+  { id: 'red',      label: 'RED',        sub: 'colour flash',     kind: 'color', rgb: [1, 0, 0],       mode: 'mom', key: 'q', color: '#ff2a2a' },
+  { id: 'green',    label: 'GREEN',      sub: 'colour flash',     kind: 'color', rgb: [0, 1, 0.15],    mode: 'mom', key: 'w', color: '#22ff66' },
+  { id: 'blue',     label: 'BLUE',       sub: 'colour flash',     kind: 'color', rgb: [0.1, 0.2, 1],   mode: 'mom', key: 'e', color: '#3d6bff' },
+  { id: 'magenta',  label: 'MAGENTA',    sub: 'colour flash',     kind: 'color', rgb: [1, 0, 0.9],     mode: 'mom', key: 'r', color: '#ff3df0' },
+  { id: 'cyan',     label: 'CYAN',       sub: 'colour flash',     kind: 'color', rgb: [0, 0.9, 1],     mode: 'mom', key: 'a', color: '#22e5ff' },
+  { id: 'amber',    label: 'AMBER',      sub: 'colour flash',     kind: 'color', rgb: [1, 0.6, 0],     mode: 'mom', key: 's', color: '#ffb020' },
+  { id: 'purple',   label: 'PURPLE',     sub: 'colour flash',     kind: 'color', rgb: [0.55, 0, 1],    mode: 'mom', key: 'd', color: '#a15cff' },
+  { id: 'lime',     label: 'LIME',       sub: 'colour flash',     kind: 'color', rgb: [0.6, 1, 0],     mode: 'mom', key: 'f', color: '#b6ff3d' },
+  { id: 'm-bass',   label: 'BASS CHASE', sub: 'steps on bass hits',   kind: 'macro', macro: 'bass',    mode: 'tog', key: 'z', color: '#22e5ff' },
+  { id: 'm-rapid',  label: 'RAPID CHASE', sub: 'fast, colour on mids', kind: 'macro', macro: 'rapid',   mode: 'tog', key: 'x', color: '#ff9f1a' },
+  { id: 'm-rainbow', label: 'RAINBOW ROLL', sub: 'pulses with bass',  kind: 'macro', macro: 'rainbow', mode: 'tog', key: 'c', color: '#a15cff' },
+  { id: 'm-flash',  label: 'BEAT FLASH', sub: 'white hit on bass',    kind: 'macro', macro: 'flash',   mode: 'tog', key: 'v', color: '#ff3df0' }
+];
+const PAD_BY_ID = {};
+PAD_DEFS.forEach(p => { PAD_BY_ID[p.id] = p; });
+
+const MACROS = {
+  bass: {
+    program: { name: 'Bass chase', bpm: 128, beats: 1, wave: 'saw', depth: 0.7, fade: 0, spread: 1, dir: 'forward', audioDriven: true, colors: ['#ff2bd6', '#00f0ff', '#7a3cff', '#b6ff00'] },
+    bands: { bass: 'step', mid: 'none', treble: 'none' }
+  },
+  rapid: {
+    program: { name: 'Rapid chase', bpm: 174, beats: 0.5, wave: 'triangle', depth: 0.5, fade: 0.2, spread: 1, dir: 'bounce', colors: ['#ff0033', '#ff9900', '#00e5ff', '#7a00ff', '#00ff66'] },
+    bands: { bass: 'none', mid: 'color', treble: 'flash' }
+  },
+  rainbow: {
+    program: { name: 'Rainbow roll', bpm: 100, beats: 1, wave: 'sine', depth: 0.3, fade: 0.9, spread: 0.5, dir: 'forward', colors: rainbow6 },
+    bands: { bass: 'pulse', mid: 'none', treble: 'none' }
+  },
+  flash: { program: null, bands: { bass: 'flash', mid: 'none', treble: 'none' } }
+};
+
+const pads = { active: new Set(), order: [] };
+let macroSnap = null;
+
+const padIsOn = id => pads.active.has(id);
+
+let lastNoFxWarn = -1e9;
+function warnNoFixtures() {
+  const t = performance.now();
+  if (fixtures.length || t - lastNoFxWarn < 4000) return;
+  lastNoFxWarn = t;
+  toast('Nothing is patched, so this pad has no channels to drive. Add your fixture under Fixtures & Patch (match its DMX address), or use the Simple Desk faders for raw channels.', 'warn', 8000);
+}
+function padOn(id) {
+  if (pads.active.has(id) || !PAD_BY_ID[id]) return;
+  if (PAD_BY_ID[id].kind !== 'blackout') warnNoFixtures();
+  pads.active.add(id);
+  pads.order.push(id);
+  if (PAD_BY_ID[id].kind === 'macro') macroChanged();
+  reflectPads();
+}
+function padOff(id) {
+  if (!pads.active.has(id)) return;
+  pads.active.delete(id);
+  pads.order = pads.order.filter(x => x !== id);
+  if (PAD_BY_ID[id].kind === 'macro') macroChanged();
+  reflectPads();
+}
+function padToggle(id) { if (padIsOn(id)) padOff(id); else padOn(id); }
+
+function macroChanged() {
+  const act = pads.order.filter(id => PAD_BY_ID[id].kind === 'macro');
+  if (!act.length) {
+    if (macroSnap) { restoreSnapshot(macroSnap); macroSnap = null; }
+    return;
+  }
+  if (!macroSnap) macroSnap = takeSnapshot();
+  const m = MACROS[PAD_BY_ID[act[act.length - 1]].macro];
+  if (m.program) applyProgramSpec(m.program, true);
+  if (m.bands) for (const k in m.bands) audio.bands[k].action = m.bands[k];
+  syncBandUI();
+  if (!audio.running) toast('Audio input is off, so this macro runs on its internal clock. Start listening in the Audio tab for beat reactivity.', 'info', 5200);
+}
+
+/** Global look produced by the colour / white / strobe pads, or null when none is held. */
+function padOverride() {
+  let white = false, color = null, hz = 0;
+  for (const id of pads.order) {
+    const d = PAD_BY_ID[id];
+    if (d.kind === 'white') { white = true; color = null; }
+    else if (d.kind === 'color') { color = d.rgb; white = false; }
+    else if (d.kind === 'strobe') hz = Math.max(hz, d.hz);
+  }
+  if (!white && !color && !hz) return null;
+  const c = color || [1, 1, 1];
+  return { r: c[0], g: c[1], b: c[2], w: color ? undefined : 1, level: 1, strobeHz: hz, pan: 0.5, tilt: 0.5, ovr: true };
+}
+
+/* ================================================================
+   11. FRAME COMPOSER
+   Priority, lowest to highest: programs + audio  <  Simple Desk holds  <  pads  <  Blackout.
+   ================================================================ */
+function programLook(i) {
+  let look = chaseLook(i);
+  const fromChase = !!look;
+  if (!look && audio.running) {                            // no chase running: audio drives a solid colour
+    let level = -1;
+    if (audio.hasPulse) level = audio.pulseEnv;
+    else if (audio.hasColor) level = 0.25 + 0.75 * audio.kick;
+    if (level >= 0) {
+      const c = hsvToRgb(audio.hue, 1, 1);
+      look = { r: c[0], g: c[1], b: c[2], level, strobeHz: 0, pan: 0.5, tilt: 0.5 };
+    }
+  }
+  if (audio.running) {
+    if (look && fromChase) {
+      if (audio.hasColor && audio.hue) { const h = rgbToHsv(look.r, look.g, look.b), c = hsvToRgb(h[0] + audio.hue, h[1], h[2]); look.r = c[0]; look.g = c[1]; look.b = c[2]; }
+      if (audio.hasPulse) look.level *= 0.15 + 0.85 * audio.pulseEnv;
+    }
+    if (audio.flash > 0.01) {
+      if (!look) look = { r: 0, g: 0, b: 0, level: 0, strobeHz: 0, pan: 0.5, tilt: 0.5 };
+      const f = audio.flash;
+      look.r = lerp(look.r, 1, f); look.g = lerp(look.g, 1, f); look.b = lerp(look.b, 1, f);
+      look.level = Math.max(look.level, f);
+    }
+  }
+  return look;
+}
+
+function composeFrame(now, dt) {
+  frameIdx++;
+  audioUpdate(now, dt);
+  chaseUpdate(now, dt);
+
+  programOut.fill(0);
+  for (let i = 0; i < fixtures.length; i++) writeFixture(fixtures[i], programLook(i) || IDLE_LOOK, programOut);
+
+  dmxBuffer.set(programOut);
+  for (let c = 0; c < DMX_SLOTS; c++) if (deskHeld[c]) dmxBuffer[c] = deskValues[c];
+
+  const ov = padOverride();
+  if (ov) for (let i = 0; i < fixtures.length; i++) writeFixture(fixtures[i], ov, dmxBuffer);
+
+  if (state.locateId != null) {
+    const fx = fixtures.find(f => f.id === state.locateId);
+    if (fx) writeFixture(fx, { r: 1, g: 1, b: 1, w: 1, level: 1, strobeHz: 0, pan: 0.5, tilt: 0.5, ovr: true }, dmxBuffer);
+  }
+
+  if (padIsOn('blackout')) dmxBuffer.fill(0);
+}
+
+/* ================================================================
+   12. UI: SHELL, TABS, HEADER
+   ================================================================ */
+let activeTab = 'desk';
+let uiReady = false;
+
+function showTab(name) {
+  activeTab = name;
+  $$('.tab').forEach(s => { s.hidden = s.id !== 'tab-' + name; });
+  $$('.tabbtn').forEach(b => { const on = b.dataset.tab === name; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+  if (name === 'desk') renderDesk();
+}
+
+function updateConnUI() {
+  const on = dmx.active;
+  const a = $('#btn-connect'), b = $('#btn-connect-any'), c = $('#btn-disconnect');
+  if (a) a.hidden = on;
+  if (b) b.hidden = on;
+  if (c) c.hidden = !on;
+}
+
+function detectSupport() {
+  const msgs = [];
+  if (!('serial' in navigator)) {
+    msgs.push('<b>Web Serial is not available here.</b> LUMEX still runs as a simulator, but sending DMX needs Chrome, Edge or another Chromium browser on a secure origin (https, http://localhost, or a saved local file).');
+    $('#btn-connect').disabled = true;
+    $('#btn-connect-any').disabled = true;
+  }
+  // Custom capability verification for internal system loopback stream engine
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+    msgs.push('Audio capture is unavailable in this context, so the Audio tab is disabled.');
+  }
+  const banner = $('#support-banner');
+  if (msgs.length) { banner.innerHTML = msgs.join('<br>'); banner.hidden = false; }
+}
+
+function bindHeader() {
+  $('#btn-connect').addEventListener('click', () => connectSerial(false));
+  $('#btn-connect-any').addEventListener('click', () => connectSerial(true));
+  $('#btn-disconnect').addEventListener('click', () => { dmx.wantClose = true; });
+  $('#btn-blackout').addEventListener('click', () => padToggle('blackout'));
+  $$('.tabbtn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  $('#d-frame').addEventListener('change', e => { dmx.frameMode = e.target.value; });
+  const timing = store.get('timing', {});
+  if (Number.isFinite(timing.brk)) dmx.breakReq = clamp(timing.brk, 88, 3000);
+  if (Number.isFinite(timing.mab)) dmx.mabReq = clamp(timing.mab, 8, 3000);
+  const bi = $('#d-break-in'), mi = $('#d-mab-in');
+  bi.value = dmx.breakReq; mi.value = dmx.mabReq;
+  const saveTiming = () => {
+    dmx.breakReq = clamp(parseInt(bi.value, 10) || BREAK_US, 88, 3000);
+    dmx.mabReq = clamp(parseInt(mi.value, 10) || MAB_US, 8, 3000);
+    store.set('timing', { brk: dmx.breakReq, mab: dmx.mabReq });
+  };
+  const rtsSel = $('#d-rts');
+  dmx.rts = store.get('rts', false) === true;
+  rtsSel.value = dmx.rts ? 'on' : 'off';
+  rtsSel.addEventListener('change', () => { dmx.rts = rtsSel.value === 'on'; store.set('rts', dmx.rts); });
+  bi.addEventListener('change', () => { saveTiming(); bi.value = dmx.breakReq; });
+  mi.addEventListener('change', () => { saveTiming(); mi.value = dmx.mabReq; });
+  $('#d-clock').textContent = Clock.hasWorker ? 'worker' : 'timer';
+  if ('serial' in navigator) {
+    navigator.serial.addEventListener('disconnect', e => { if (dmx.port && e.target === dmx.port) connectionLost('device unplugged'); });
+  }
+}
+
+/* ================================================================
+   13. SIMPLE DESK
+   ================================================================ */
+const PAGE_SIZE = 32, PAGES = DMX_SLOTS / PAGE_SIZE;
+let deskPage = 0;
+let faders = [];
+
+function deskSet(ch, v) {
+  v = clamp(Math.round(v), 0, 255);
+  deskValues[ch] = v; deskHeld[ch] = 1;
+  dmxBuffer[ch] = v;                      // straight into the master array, no waiting for the next frame
+}
+function deskRelease(ch) { deskValues[ch] = 0; deskHeld[ch] = 0; }
+function deskResetAll() {
+  for (let c = 0; c < DMX_SLOTS; c++) { if (deskHeld[c]) dmxBuffer[c] = 0; deskValues[c] = 0; deskHeld[c] = 0; }
+}
+
+function makeFader(ch) {
+  const root = el('div', 'fader idle');
+  root.innerHTML =
+    '<div class="fader-val">0</div>' +
+    `<div class="fader-track" tabindex="0" role="slider" aria-label="Channel ${ch + 1}" aria-valuemin="0" aria-valuemax="255" aria-valuenow="0">` +
+    '<div class="fader-groove"><div class="fader-live"></div></div><div class="fader-cap"></div></div>' +
+    `<div class="fader-ch" title="Double-click to release this channel">Ch ${ch + 1}</div><div class="fader-sub"></div>`;
+  const valEl = root.children[0], track = root.children[1], chEl = root.children[2], sub = root.children[3];
+
+  const m = channelMap[ch];
+  if (m) {
+    const role = PROFILES[m.fx.type].channels[m.i];
+    sub.textContent = m.fx.name;
+    sub.title = `${m.fx.name}: ${role}`;
+    sub.style.color = fxColor(m.fx);
+  }
+
+  const setFromPointer = e => {
+    const r = track.getBoundingClientRect();
+    deskSet(ch, (1 - clamp((e.clientY - r.top - 17) / (r.height - 34), 0, 1)) * 255);
+  };
+  let dragging = false;
+  track.addEventListener('pointerdown', e => { dragging = true; track.setPointerCapture(e.pointerId); track.focus({ preventScroll: true }); setFromPointer(e); e.preventDefault(); });
+  track.addEventListener('pointermove', e => { if (dragging) setFromPointer(e); });
+  const end = () => { dragging = false; };
+  track.addEventListener('pointerup', end);
+  track.addEventListener('pointercancel', end);
+  track.addEventListener('keydown', e => {
+    const cur = deskHeld[ch] ? deskValues[ch] : dmxBuffer[ch];
+    const big = e.shiftKey ? 10 : 1;
+    let v = null;
+    switch (e.key) {
+      case 'ArrowUp': case 'ArrowRight': v = cur + big; break;
+      case 'ArrowDown': case 'ArrowLeft': v = cur - big; break;
+      case 'PageUp': v = cur + 16; break;
+      case 'PageDown': v = cur - 16; break;
+      case 'Home': v = 0; break;
+      case 'End': v = 255; break;
+    }
+    if (v !== null) { e.preventDefault(); deskSet(ch, v); }
+  });
+  chEl.addEventListener('dblclick', () => deskRelease(ch));
+
+  let cLive = -1, cHeld = -1, cCap = -1;
+  return {
+    root,
+    update() {
+      const live = dmxBuffer[ch], held = deskHeld[ch];
+      const cap = held ? deskValues[ch] : live;
+      if (live === cLive && held === cHeld && cap === cCap) return;
+      cLive = live; cHeld = held; cCap = cap;
+      valEl.textContent = live;
+      track.style.setProperty('--v', (cap / 255).toFixed(4));
+      track.style.setProperty('--live', (live / 255).toFixed(4));
+      track.setAttribute('aria-valuenow', String(cap));
+      root.className = 'fader ' + (held ? 'held' : live > 0 ? 'auto' : 'idle');
+    }
+  };
+}
+
+function renderDesk() {
+  const box = $('#desk-faders');
+  if (!box) return;
+  box.innerHTML = '';
+  faders = [];
+  const start = deskPage * PAGE_SIZE;
+  for (let i = 0; i < PAGE_SIZE; i++) { const f = makeFader(start + i); box.appendChild(f.root); faders.push(f); }
+  $('#desk-pagelabel').textContent = `Ch ${start + 1}–${start + PAGE_SIZE}`;
+  $('#desk-pageno').textContent = `Page ${deskPage + 1} / ${PAGES}`;
+  $('#desk-page').value = String(deskPage);
+  $('#desk-prev').disabled = deskPage === 0;
+  $('#desk-next').disabled = deskPage === PAGES - 1;
+  box.scrollLeft = 0;
+  faders.forEach(f => f.update());
+}
+
+function buildDeskControls() {
+  const sel = $('#desk-page');
+  sel.innerHTML = Array.from({ length: PAGES }, (_, p) => `<option value="${p}">${p * PAGE_SIZE + 1}–${p * PAGE_SIZE + PAGE_SIZE}</option>`).join('');
+  $('#desk-prev').addEventListener('click', () => { deskPage = Math.max(0, deskPage - 1); renderDesk(); });
+  $('#desk-next').addEventListener('click', () => { deskPage = Math.min(PAGES - 1, deskPage + 1); renderDesk(); });
+  sel.addEventListener('change', () => { deskPage = parseInt(sel.value, 10) || 0; renderDesk(); });
+  $('#desk-reset').addEventListener('click', () => { deskResetAll(); toast('All faders reset to zero.', 'info', 1800); });
+}
+
+/* ================================================================
+   14. FIXTURES, PATCH GRID, STAGE STRIP
+   ================================================================ */
+let nameTouched = false;
+const cells = [];
+let stageEls = [];
+
+function onPatchChanged() {
+  if (!uiReady) return;
+  renderFixtureList();
+  paintPatchOwnership();
+  renderStage();
+  refreshAddForm();
+  renderDesk();
+}
+
+function refreshAddForm() {
+  const type = $('#fx-type').value, p = PROFILES[type];
+  if (!p) return;
+  $('#fx-chlist').textContent = 'Channels: ' + p.channels.join(', ') + '.';
+  if (!nameTouched) $('#fx-name').value = `${p.label} ${fixtures.filter(f => f.type === type).length + 1}`;
+  $('#fx-addr').value = nextFreeAddress(p.channels.length) || 1;
+}
+
+function renderFixtureList() {
+  const box = $('#fx-list');
+  box.innerHTML = '';
+  if (!fixtures.length) { box.innerHTML = '<p class="hint">Nothing patched yet. Choose a profile and press Patch fixture.</p>'; return; }
+  for (const fx of fixtures) {
+    const n = chCount(fx);
+    const card = el('div', 'fxcard');
+    card.style.setProperty('--c', fxColor(fx));
+    card.innerHTML =
+      '<span class="sw"></span>' +
+      `<div class="min-w-0"><div class="nm">${esc(fx.name)}</div><div class="hint">${PROFILES[fx.type].label}, Ch ${fx.addr}–${fx.addr + n - 1}</div></div>` +
+      `<input class="inp" type="number" min="1" max="${DMX_SLOTS - n + 1}" value="${fx.addr}" aria-label="Start address for ${esc(fx.name)}" title="Start address">` +
+      '<button class="btn btn-sm loc" title="Hold to flash this fixture white">Locate</button>' +
+      '<button class="btn btn-sm btn-danger del">Remove</button>';
+    $('input', card).addEventListener('change', e => { if (!moveFixture(fx.id, parseInt(e.target.value, 10) || 0)) renderFixtureList(); });
+    $('.del', card).addEventListener('click', () => removeFixture(fx.id));
+    const loc = $('.loc', card);
+    loc.addEventListener('pointerdown', e => { state.locateId = fx.id; loc.setPointerCapture(e.pointerId); });
+    const stop = () => { if (state.locateId === fx.id) state.locateId = null; };
+    loc.addEventListener('pointerup', stop);
+    loc.addEventListener('pointercancel', stop);
+    box.appendChild(card);
+  }
+}
+
+function buildPatchUI() {
+  const sel = $('#fx-type');
+  sel.innerHTML = Object.keys(PROFILES).map(k => `<option value="${k}">${PROFILES[k].label} (${PROFILES[k].channels.length}-ch)</option>`).join('');
+  sel.addEventListener('change', () => { nameTouched = false; refreshAddForm(); });
+  $('#fx-name').addEventListener('input', () => { nameTouched = true; });
+  $('#fx-add').addEventListener('click', () => {
+    const type = sel.value, p = PROFILES[type];
+    const count = clamp(parseInt($('#fx-count').value, 10) || 1, 1, 64);
+    const addr = parseInt($('#fx-addr').value, 10) || 1;
+    const name = $('#fx-name').value.trim() || p.label;
+    const added = addFixtures(type, addr, count, name);
+    if (added) { nameTouched = false; refreshAddForm(); toast(`Patched ${added} × ${p.label} starting at Ch ${addr}.`, 'info', 2200); }
+  });
+  $('#fx-clear').addEventListener('click', () => {
+    if (!fixtures.length) return;
+    if (confirm('Remove every fixture from the patch?')) { fixtures = []; rebuildPatchMap(); }
+  });
+
+  const grid = $('#patch-grid');
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < DMX_SLOTS; i++) {
+    const c = el('div', 'pcell', `<i>${i + 1}</i><b>0</b>`);
+    c._v = 0;
+    cells.push(c);
+    frag.appendChild(c);
+  }
+  grid.appendChild(frag);
+}
+
+function paintPatchOwnership() {
+  for (let i = 0; i < DMX_SLOTS; i++) {
+    const c = cells[i], m = channelMap[i];
+    c.classList.toggle('patched', !!m);
+    c.style.setProperty('--c', m ? fxColor(m.fx) : '#4d7cff');
+    c.title = m ? `Ch ${i + 1}: ${m.fx.name}, ${PROFILES[m.fx.type].channels[m.i]}` : `Ch ${i + 1}: unpatched`;
+  }
+}
+
+function updatePatchGrid() {
+  for (let i = 0; i < DMX_SLOTS; i++) {
+    const v = dmxBuffer[i], c = cells[i];
+    if (c._v !== v) { c._v = v; c.style.setProperty('--lvl', (v / 255).toFixed(3)); c.lastChild.textContent = v; }
+  }
+}
+
+function renderStage() {
+  const box = $('#stage-fx');
+  box.innerHTML = '';
+  stageEls = [];
+  if (!fixtures.length) { box.innerHTML = '<span class="hint">No fixtures patched. Add some in Fixtures &amp; Patch and the live colours appear here.</span>'; return; }
+  for (const fx of fixtures) {
+    const d = el('div', 'stage-fx');
+    d.title = `${fx.name} (Ch ${fx.addr})`;
+    box.appendChild(d);
+    stageEls.push({ fx, d, key: -1 });
+  }
+}
+function updateStage() {
+  for (const s of stageEls) {
+    const c = previewColor(s.fx);
+    const key = (c[0] << 16) | (c[1] << 8) | c[2];
+    if (key === s.key) continue;
+    s.key = key;
+    const g = Math.max(c[0], c[1], c[2]) / 255;
+    s.d.style.background = `rgb(${c[0]},${c[1]},${c[2]})`;
+    s.d.style.boxShadow = g > 0.05
+      ? `0 0 ${Math.round(6 + 16 * g)}px ${Math.round(2 * g)}px rgba(${c[0]},${c[1]},${c[2]},${(0.75 * g).toFixed(2)}), 0 0 0 1px #26375b`
+      : '0 0 0 1px #26375b';
+  }
+}
+
+/* ================================================================
+   15. AUDIO UI
+   ================================================================ */
+function saveAudio() {
+  const bands = {};
+  for (const k in audio.bands) { const b = audio.bands[k]; bands[k] = { lo: b.lo, hi: b.hi, thr: b.thr, action: b.action }; }
+  store.set('audio', { gain: audio.gain, gapMs: audio.gapMs, bands });
+}
+function loadAudioSettings() {
+  const s = store.get('audio', null);
+  if (!s) return;
+  if (isFinite(s.gain)) audio.gain = clamp(s.gain, 0.5, 6);
+  if (isFinite(s.gapMs)) audio.gapMs = clamp(s.gapMs, 40, 600);
+  for (const k in audio.bands) {
+    const v = s.bands && s.bands[k];
+    if (!v) continue;
+    const b = audio.bands[k];
+    if (isFinite(v.lo)) b.lo = clamp(v.lo, 20, 19000);
+    if (isFinite(v.hi)) b.hi = clamp(v.hi, b.lo + 10, 20000);
+    if (isFinite(v.thr)) b.thr = clamp(v.thr, 0.05, 1);
+    if (AUDIO_ACTIONS.some(a => a[0] === v.action)) b.action = v.action;
+  }
+}
+
+function syncBandUI() {
+  for (const k in audio.bands) {
+    const b = audio.bands[k], u = b.ui;
+    if (!u) continue;
+    u.thrIn.value = b.thr;
+    u.thrV.textContent = Math.round(b.thr * 100) + '%';
+    u.lo.value = b.lo; u.hi.value = b.hi;
+    u.action.value = b.action;
+    u.range.textContent = `${b.lo}–${b.hi} Hz`;
+    u.thr.style.left = `calc(${(b.thr * 100).toFixed(1)}% - 1px)`;
+  }
+}
+
+function buildBandUI() {
+  const wrap = $('#aud-bands');
+  wrap.innerHTML = '';
+  for (const key in audio.bands) {
+    const b = audio.bands[key];
+    const card = el('div', 'panel band p-4');
+    card.style.setProperty('--bc', b.color);
+    card.innerHTML =
+      `<div class="flex items-baseline justify-between mb-3"><div class="font-display font-semibold text-lg" style="color:var(--bc)">${b.name}</div><div class="mono text-[11px] text-slate-400" data-k="range"></div></div>` +
+      '<div class="meter"><div class="meter-fill"></div><div class="meter-thr"></div></div>' +
+      '<label class="lbl mt-3">Trigger threshold <span data-k="thr-v" class="mono text-white"></span><input data-k="thr" class="rng" type="range" min="0.05" max="1" step="0.01"></label>' +
+      '<div class="grid grid-cols-2 gap-2 mt-2">' +
+      '<label class="lbl">Band low (Hz)<input data-k="lo" type="number" min="20" max="19000" class="inp"></label>' +
+      '<label class="lbl">Band high (Hz)<input data-k="hi" type="number" min="30" max="20000" class="inp"></label></div>' +
+      `<label class="lbl mt-3">When it triggers<select data-k="action" class="inp">${AUDIO_ACTIONS.map(a => `<option value="${a[0]}">${a[1]}</option>`).join('')}</select></label>`;
+    wrap.appendChild(card);
+    const q = k => $(`[data-k="${k}"]`, card);
+    b.ui = { card, fill: $('.meter-fill', card), thr: $('.meter-thr', card), range: q('range'), thrIn: q('thr'), thrV: q('thr-v'), lo: q('lo'), hi: q('hi'), action: q('action') };
+    b.ui.thrIn.addEventListener('input', () => { b.thr = parseFloat(b.ui.thrIn.value); syncBandUI(); saveAudio(); });
+    b.ui.lo.addEventListener('change', () => { b.lo = clamp(parseInt(b.ui.lo.value, 10) || b.lo, 20, 19000); if (b.hi <= b.lo) b.hi = b.lo + 10; syncBandUI(); saveAudio(); });
+    b.ui.hi.addEventListener('change', () => { b.hi = clamp(parseInt(b.ui.hi.value, 10) || b.hi, b.lo + 10, 20000); syncBandUI(); saveAudio(); });
+    b.ui.action.addEventListener('change', () => { b.action = b.ui.action.value; saveAudio(); });
+  }
+  syncBandUI();
+}
+
+function onAudioState() {
+  const b = $('#aud-start'), s = $('#aud-status');
+  if (!b || !s) return;
+  b.textContent = audio.running ? 'Stop listening' : 'Start listening';
+  b.classList.toggle('btn-primary', !audio.running);
+  s.textContent = audio.running
+    ? `Listening at ${audio.ctx ? audio.ctx.sampleRate : '?'} Hz. The bass, mid and treble triggers below now drive the rig.`
+    : 'Audio is off.';
+}
+
+async function refreshDevices() {
+  const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
+  const sel = $('#aud-device');
+  const prev = sel.value || store.get('audioDevice', '');
+  sel.innerHTML = devs.map((d, i) => `<option value="${esc(d.deviceId)}">${esc(d.label || 'Input ' + (i + 1))}</option>`).join('') || '<option value="">No inputs found</option>';
+  if (devs.some(d => d.deviceId === prev)) sel.value = prev;
+}
+
+function buildAudioUI() {
+  const gain = $('#aud-gain'), gap = $('#aud-gap');
+  const paint = () => { $('#aud-gain-v').textContent = audio.gain.toFixed(2) + '×'; $('#aud-gap-v').textContent = audio.gapMs + ' ms'; };
+  gain.value = audio.gain; gap.value = audio.gapMs; paint();
+  gain.addEventListener('input', () => { audio.gain = parseFloat(gain.value); paint(); saveAudio(); });
+  gap.addEventListener('input', () => { audio.gapMs = parseInt(gap.value, 10); paint(); saveAudio(); });
+  buildBandUI();
+
+  // Bypasses the microphone device listing step and sets up direct desktop loops
+  $('#aud-enable').addEventListener('click', async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { 
+      toast('This browser context cannot capture screen audio.', 'warn'); 
+      return; 
+    }
+    $('#aud-device').disabled = true; // Dropdowns are completely unneeded for system loop audio
+    $('#aud-start').disabled = false;
+    $('#aud-status').textContent = 'System Audio ready. Press "Start listening" and check the "Share system audio" box.';
+  });
+
+  $('#aud-start').addEventListener('click', async () => {
+    try {
+      if (audio.running) { await audioStopStream(); return; }
+      await audioStartStream(null);
+    } catch (e) { 
+      toast('Could not start audio: ' + ((e && e.message) || e), 'error', 6000); 
+    }
+  });
+
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+    navigator.mediaDevices.addEventListener('devicechange', () => { 
+      if (!$('#aud-device').disabled) refreshDevices().catch(() => {}); 
+    });
+  }
+  onAudioState();
+}
+
+
+function drawSpectrum() {
+  const cv = $('#aud-canvas');
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  const FMIN = 20, FMAX = 16000, span = Math.log(FMAX / FMIN);
+  const xOf = f => Math.log(clamp(f, FMIN, FMAX) / FMIN) / span * w;
+  for (const k in audio.bands) {
+    const b = audio.bands[k], x0 = xOf(b.lo), x1 = xOf(b.hi), y = h - b.thr * h;
+    g.fillStyle = b.color + '1c'; g.fillRect(x0, 0, x1 - x0, h);
+    g.strokeStyle = b.color + 'cc'; g.setLineDash([5, 4]); g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke(); g.setLineDash([]);
+    g.fillStyle = b.color; g.font = '600 11px "IBM Plex Sans",sans-serif'; g.fillText(b.name, x0 + 6, 14);
+  }
+  if (audio.running && audio.freq) {
+    const nyq = audio.ctx.sampleRate / 2, bins = audio.freq.length;
+    const grad = g.createLinearGradient(0, h, 0, 0);
+    grad.addColorStop(0, '#4d7cff'); grad.addColorStop(0.55, '#a15cff'); grad.addColorStop(1, '#22e5ff');
+    g.fillStyle = grad;
+    for (let x = 0; x < w; x += 4) {
+      const f0 = FMIN * Math.exp(span * x / w), f1 = FMIN * Math.exp(span * (x + 3) / w);
+      const i0 = clamp(Math.floor(f0 / nyq * bins), 0, bins - 1), i1 = clamp(Math.ceil(f1 / nyq * bins), i0 + 1, bins);
+      let m = 0;
+      for (let i = i0; i < i1; i++) if (audio.freq[i] > m) m = audio.freq[i];
+      const bh = Math.min(1, m / 255 * audio.gain) * h;
+      g.fillRect(x, h - bh, 3, bh);
+    }
+  }
+}
+
+function updateAudioUI(now) {
+  for (const k in audio.bands) {
+    const b = audio.bands[k];
+    b.ui.fill.style.width = (b.level * 100).toFixed(1) + '%';
+    b.ui.card.classList.toggle('hit', now - b.hitAt < 140);
+  }
+  drawSpectrum();
+}
+
+/* ================================================================
+   16. AI JOCKEY UI
+   ================================================================ */
+const SUGGESTIONS = [
+  'Fast high-energy neon strobe', 'Slow moody cyberpunk pulse', 'Warm sunset wash with smooth fades',
+  'Ocean wave chase', 'Police chase', 'Rainbow rave synced to the beat', 'Alternating red and blue bounce'
+];
+let stepRows = [];
+let lastCur = -2;
+const taps = [];
+
+function syncProgramLabels() {
+  $('#p-depth-v').textContent = Math.round(chase.depth * 100) + '%';
+  $('#p-fade-v').textContent = Math.round(chase.fade * 100) + '%';
+  $('#p-spread-v').textContent = chase.spread + (chase.spread === 1 ? ' step' : ' steps');
+  $('#p-motion-v').textContent = Math.round(chase.motion * 100) + '%';
+  $('#p-master-v').textContent = Math.round(chase.master * 100) + '%';
+}
+function syncProgramUI() {
+  if (!uiReady) return;
+  $('#p-bpm').value = chase.bpm; $('#p-bpm-n').value = Math.round(chase.bpm);
+  $('#p-beats').value = String(chase.beats);
+  $('#p-wave').value = chase.wave;
+  $('#p-dir').value = chase.dir;
+  $('#p-depth').value = Math.round(chase.depth * 100);
+  $('#p-fade').value = Math.round(chase.fade * 100);
+  $('#p-spread').value = chase.spread;
+  $('#p-motion').value = Math.round(chase.motion * 100);
+  $('#p-master').value = Math.round(chase.master * 100);
+  $('#p-audio').checked = chase.audioDriven;
+  syncProgramLabels();
+  $('#pb-name').textContent = `${chase.name}, ${chase.steps.length} steps`;
+}
+function syncPlayUI() {
+  if (!uiReady) return;
+  $('#pb-play').textContent = chase.state === 'playing' ? 'Pause' : 'Play';
+  const p = $('#pb-state');
+  p.textContent = chase.state === 'playing' ? 'Playing' : chase.state === 'paused' ? 'Paused' : 'Stopped';
+  p.className = 'pill mini ml-auto' + (chase.state === 'playing' ? ' on' : chase.state === 'paused' ? ' hold' : '');
+  $('#pb-name').textContent = `${chase.name}, ${chase.steps.length} steps`;
+}
+
+function renderSteps() {
+  if (!uiReady) return;
+  const box = $('#steps');
+  box.innerHTML = '';
+  stepRows = [];
+  lastCur = -2;
+  chase.steps.forEach((s, i) => {
+    const row = el('div', 'step-row');
+    row.innerHTML =
+      `<button class="step-idx" title="Jump to step ${i + 1} and pause">${i + 1}</button>` +
+      `<input type="color" class="step-color" value="${esc(s.color)}" aria-label="Step ${i + 1} colour">` +
+      `<label class="lbl" style="margin:0">Level <span class="mono text-white lv">${Math.round(s.level * 100)}%</span><input type="range" class="rng step-level" min="0" max="100" value="${Math.round(s.level * 100)}"></label>` +
+      `<label class="lbl" style="margin:0">Strobe Hz<input type="number" class="inp step-strobe" min="0" max="20" step="0.5" value="${s.strobe}"></label>` +
+      '<div class="flex gap-1"><button class="ico up" title="Move up">↑</button><button class="ico dn" title="Move down">↓</button><button class="ico dup" title="Duplicate">⧉</button><button class="ico del" title="Delete">✕</button></div>';
+    $('.step-idx', row).addEventListener('click', () => { chaseJump(i, performance.now()); syncPlayUI(); });
+    $('.step-color', row).addEventListener('input', e => { s.color = e.target.value; s._rgb = null; });
+    $('.step-level', row).addEventListener('input', e => { s.level = parseInt(e.target.value, 10) / 100; $('.lv', row).textContent = e.target.value + '%'; });
+    $('.step-strobe', row).addEventListener('input', e => { s.strobe = clamp(parseFloat(e.target.value) || 0, 0, 20); });
+    $('.up', row).addEventListener('click', () => { if (i > 0) { chase.steps.splice(i - 1, 0, chase.steps.splice(i, 1)[0]); renderSteps(); } });
+    $('.dn', row).addEventListener('click', () => { if (i < chase.steps.length - 1) { chase.steps.splice(i + 1, 0, chase.steps.splice(i, 1)[0]); renderSteps(); } });
+    $('.dup', row).addEventListener('click', () => { chase.steps.splice(i + 1, 0, { color: s.color, level: s.level, strobe: s.strobe }); renderSteps(); syncProgramUI(); });
+    $('.del', row).addEventListener('click', () => {
+      if (chase.steps.length <= 1) { toast('A loop needs at least one step.', 'warn'); return; }
+      chase.steps.splice(i, 1); renderSteps(); syncProgramUI();
+    });
+    box.appendChild(row);
+    stepRows.push(row);
+  });
+}
+
+function updateAIUI() {
+  const cur = chase.state === 'stopped' ? -1 : chase.curIdx;
+  if (cur === lastCur) return;
+  lastCur = cur;
+  stepRows.forEach((r, i) => r.classList.toggle('current', i === cur));
+}
+
+function runAI(text) {
+  text = (text || '').trim();
+  if (!text) { toast('Describe the look you want first.', 'warn'); return; }
+  const { spec, chips } = generateProgram(text);
+  applyProgramSpec(spec, true);
+  if (spec.audioDriven) {
+    audio.bands.bass.action = 'step';
+    syncBandUI(); saveAudio();
+    if (!audio.running) toast('Steps will follow the beat once you start listening in the Audio tab. Until then the internal clock runs them.', 'info', 5500);
+  }
+  $('#ai-detected').innerHTML = '<div class="hint mb-2">What the jockey understood</div>' + chips.map(c => `<span class="chip">${esc(c)}</span>`).join('');
+  if (!fixtures.length) toast('No fixtures are patched, so the loop runs but nothing maps to DMX channels yet.', 'warn', 5200);
+}
+
+function buildAIUI() {
+  const sug = $('#ai-suggest');
+  SUGGESTIONS.forEach(s => {
+    const b = el('button', 'chipbtn');
+    b.textContent = s;
+    b.addEventListener('click', () => { $('#ai-prompt').value = s; runAI(s); });
+    sug.appendChild(b);
+  });
+  $('#ai-go').addEventListener('click', () => runAI($('#ai-prompt').value));
+  $('#ai-prompt').addEventListener('keydown', e => { if (e.key === 'Enter') runAI(e.target.value); });
+
+  const bind = (id, key, scale) => {
+    const inp = $('#p-' + id);
+    inp.addEventListener('input', () => { chase[key] = parseFloat(inp.value) / scale; syncProgramLabels(); });
+  };
+  bind('depth', 'depth', 100); bind('fade', 'fade', 100); bind('spread', 'spread', 1); bind('motion', 'motion', 100); bind('master', 'master', 100);
+  const setBpm = v => { chase.bpm = clamp(Math.round(v) || chase.bpm, 30, 240); $('#p-bpm').value = chase.bpm; $('#p-bpm-n').value = chase.bpm; };
+  $('#p-bpm').addEventListener('input', e => setBpm(parseFloat(e.target.value)));
+  $('#p-bpm-n').addEventListener('change', e => setBpm(parseFloat(e.target.value)));
+  $('#p-beats').addEventListener('change', e => { chase.beats = parseFloat(e.target.value); });
+  $('#p-wave').addEventListener('change', e => { chase.wave = e.target.value; });
+  $('#p-dir').addEventListener('change', e => { chase.dir = e.target.value; });
+  $('#p-audio').addEventListener('change', e => {
+    chase.audioDriven = e.target.checked;
+    if (chase.audioDriven && !audio.running) toast('Start listening in the Audio tab, otherwise the steps keep following the internal clock.', 'info', 4500);
+  });
+
+  $('#pb-play').addEventListener('click', () => {
+    if (chase.state === 'playing') chase.state = 'paused'; else chase.state = 'playing';
+    syncPlayUI();
+  });
+  $('#pb-stop').addEventListener('click', () => { chase.state = 'stopped'; syncPlayUI(); });
+  $('#pb-next').addEventListener('click', () => { if (chase.state === 'stopped') chase.state = 'paused'; chaseAdvance(1, performance.now()); syncPlayUI(); });
+  $('#pb-prev').addEventListener('click', () => { if (chase.state === 'stopped') chase.state = 'paused'; chaseAdvance(-1, performance.now()); syncPlayUI(); });
+  $('#pb-tap').addEventListener('click', () => {
+    const t = performance.now();
+    if (taps.length && t - taps[taps.length - 1] > 2000) taps.length = 0;
+    taps.push(t);
+    if (taps.length > 8) taps.shift();
+    if (taps.length >= 3) { setBpm(60000 / ((taps[taps.length - 1] - taps[0]) / (taps.length - 1))); }
+  });
+  $('#step-add').addEventListener('click', () => {
+    const last = chase.steps[chase.steps.length - 1] || { color: '#ffffff', level: 1, strobe: 0 };
+    const h = rgbToHsv.apply(null, hexToRgb(last.color));
+    const c = hsvToRgb(h[0] + 47, Math.max(h[1], 0.8), 1);
+    chase.steps.push({ color: rgbToHex(c[0], c[1], c[2]), level: last.level, strobe: last.strobe });
+    renderSteps(); syncProgramUI();
+  });
+  syncProgramUI(); renderSteps(); syncPlayUI();
+}
+
+/* ================================================================
+   17. PADS UI
+   ================================================================ */
+const padEls = {};
+const heldKeys = new Set();
+
+function reflectPads() {
+  for (const id in padEls) padEls[id].classList.toggle('on', pads.active.has(id));
+  const bo = $('#btn-blackout');
+  if (bo) bo.classList.toggle('on', padIsOn('blackout'));
+}
+
+function buildPadsUI() {
+  const saved = store.get('padModes', {});
+  PAD_DEFS.forEach(p => { if (saved[p.id] === 'mom' || saved[p.id] === 'tog') p.mode = saved[p.id]; });
+  const grid = $('#pad-grid');
+  grid.innerHTML = '';
+  PAD_DEFS.forEach(p => {
+    const b = el('div', 'pad');
+    b.tabIndex = 0;
+    b.setAttribute('role', 'button');
+    b.setAttribute('aria-label', `${p.label} ${p.sub}`);
+    b.style.setProperty('--pc', p.color);
+    b.innerHTML = `<span class="pk">${p.key.toUpperCase()}</span><span class="pm" role="button" title="Switch between momentary (hold) and latching">${p.mode === 'mom' ? 'HOLD' : 'LATCH'}</span><div class="pl">${p.label}</div><div class="ps">${p.sub}</div>`;
+    const press = () => { if (p.mode === 'mom') padOn(p.id); else padToggle(p.id); };
+    const release = () => { if (p.mode === 'mom') padOff(p.id); };
+    b.addEventListener('pointerdown', e => {
+      if (e.target.closest('.pm')) return;
+      e.preventDefault();
+      b.setPointerCapture(e.pointerId);
+      press();
+    });
+    b.addEventListener('pointerup', release);
+    b.addEventListener('pointercancel', release);
+    b.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); press(); } });
+    b.addEventListener('keyup', e => { if (e.key === 'Enter' || e.key === ' ') release(); });
+    $('.pm', b).addEventListener('click', e => {
+      e.stopPropagation();
+      if (padIsOn(p.id)) padOff(p.id);
+      p.mode = p.mode === 'mom' ? 'tog' : 'mom';
+      e.currentTarget.textContent = p.mode === 'mom' ? 'HOLD' : 'LATCH';
+      const modes = {}; PAD_DEFS.forEach(d => { modes[d.id] = d.mode; });
+      store.set('padModes', modes);
+    });
+    grid.appendChild(b);
+    padEls[p.id] = b;
+  });
+
+   const byKey = {};
+  PAD_DEFS.forEach(p => { byKey[p.key] = p; });
+
+  document.addEventListener('keydown', e => {
+    // 1. GLOBAL HOTKEYS: Check for Tab Switching (Ctrl + Number) across all views
+    if (e.ctrlKey && !isNaN(e.key) && e.key !== ' ') {
+      const tabIndex = parseInt(e.key) - 1;
+      const tabButtons = document.querySelectorAll('nav button, button[id*="tab"], .tab-btn');
+      if (tabButtons && tabButtons[tabIndex]) {
+        e.preventDefault(); 
+        tabButtons[tabIndex].click();
+        
+        // Dynamic Resize Trigger to snap DJ buttons into full screen fit immediately
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 10);
+        return; 
+      }
+    }
+
+    // 2. PERFORMANCE PAD HOTKEYS: Run original conditions
+    if (activeTab !== 'pads' || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+    const t = e.target;
+    if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+    
+    const p = byKey[(e.key || '').toLowerCase()];
+    if (!p) return;
+    
+    e.preventDefault();
+    heldKeys.add(p.id);
+    if (p.mode === 'mom') padOn(p.id); else padToggle(p.id);
+  });
+
+  document.addEventListener('keyup', e => {
+    const p = byKey[(e.key || '').toLowerCase()];
+    if (!p || !heldKeys.has(p.id)) return;
+    heldKeys.delete(p.id);
+    if (p.mode === 'mom') padOff(p.id);
+  });
+
+  window.addEventListener('blur', () => {       // never leave a momentary pad stuck on when the window loses focus
+    heldKeys.forEach(id => { if (PAD_BY_ID[id].mode === 'mom') padOff(id); });
+    heldKeys.clear();
+  });
+
+  reflectPads();
+}
+
+
+/* ================================================================
+   18. STATS, UI LOOP, START-UP
+   ================================================================ */
+let lastStats = 0;
+function fmtUs(us) { return !us ? '–' : us >= 1000 ? (us / 1000).toFixed(2) + ' ms' : Math.round(us) + ' µs'; }
+function updateStats(now) {
+  if (now - lastStats < 250) return;
+  lastStats = now;
+  $('#st-fps').textContent = dmx.active && dmx.fps ? dmx.fps.toFixed(1) : '–';
+  $('#st-loop').textContent = dmx.loopMs ? dmx.loopMs.toFixed(1) + ' ms' : '–';
+  $('#d-frames').textContent = dmx.frames;
+  $('#d-drop').textContent = dmx.dropped;
+  $('#d-err').textContent = dmx.errors;
+  $('#d-err').title = dmx.lastError || 'No errors';
+  $('#d-break').textContent = fmtUs(dmx.breakUs);
+  $('#d-mab').textContent = fmtUs(dmx.mabUs);
+  $('#d-size').textContent = dmx.slotsSent ? dmx.slotsSent + ' B' : '–';
+  $('#d-wire').textContent = dmx.active && dmx.frames ? Array.from(txFrame.subarray(1, 9)).join(' ') : 'not sending';
+}
+
+function uiLoop(now) {
+  requestAnimationFrame(uiLoop);
+  updateStage();
+  updateStats(now);
+  switch (activeTab) {
+    case 'desk': for (let i = 0; i < faders.length; i++) faders[i].update(); break;
+    case 'patch': updatePatchGrid(); break;
+    case 'audio': updateAudioUI(now); break;
+    case 'ai': updateAIUI(); break;
+  }
+}
+
+function init() {
+  loadAudioSettings();
+  buildDeskControls();
+  buildPatchUI();
+  buildAudioUI();
+  buildAIUI();
+  buildPadsUI();
+  bindHeader();
+  detectSupport();
+  uiReady = true;
+  syncProgramUI(); renderSteps(); syncPlayUI();
+  loadFixtures();                 // also renders the list, grid, stage and desk labels
+  if (!fixtures.length) { renderStage(); refreshAddForm(); }
+  showTab('desk');
+  requestAnimationFrame(uiLoop);
+  mainLoop();
+}
+
+// Handy for debugging from the browser console.
+window.LUMEX = { dmxBuffer, dmx, chase, audio, pads, get fixtures() { return fixtures; }, addFixtures, generateProgram, composeFrame, padOn, padOff, applyProgramSpec };
+
+init();
+})();
+
+</script>
+</body>
+</html>
